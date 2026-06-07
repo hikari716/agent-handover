@@ -1,0 +1,103 @@
+# agent-handover
+
+**Session handover engine for AI coding agents: checkpointed, resumable, backend-agnostic persistent memory.**
+
+AI coding agents (Claude Code, Codex, OpenCode, Cline, ...) are stateless between
+sessions. Every new session starts with re-explaining the project, the decisions
+already made, and what was left half-done. `agent-handover` is the small piece of
+infrastructure that fixes this: at the end of a session the agent writes a
+structured handover; at the start of the next one, it resumes from it — even if
+the previous handover crashed halfway.
+
+Extracted from a personal "AI Team OS" that has run daily handovers across
+multiple machines and agents since 2025.
+
+## The problem
+
+- **Context loss**: the next session doesn't know what the last one decided.
+- **Half-written state**: a handover that dies mid-run silently corrupts memory.
+  The next session boots from a state that is *partly* updated — worse than stale.
+- **Remote memory is fragile**: vector DBs and hosted notebooks go down.
+  If your agent's memory has no local fallback, your agent has no memory.
+
+## Design
+
+```
+┌─ session ends ──────────────────────────────────────────────┐
+│  HandoverEngine(steps, checkpoint, pause_file)              │
+│    step 1: collect session facts          ── checkpointed   │
+│    step 2: MemoryStore.write(layer=1...)  ── checkpointed   │
+│    step 3: MemoryStore.write(layer=2...)  ── checkpointed   │
+│    step 4: GitBackend.publish(...)        ── checkpointed   │
+└──────────────────────────────────────────────────────────────┘
+┌─ next session starts ───────────────────────────────────────┐
+│  $ agent-handover check    # 0=clean  1=RESUME  2=completed │
+│  read layer2/current-state.md  →  agent has context again   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Three memory layers, all plain Markdown** (git-friendly, diff-able, readable
+by humans and any agent that can read a file):
+
+| Layer | File pattern | Semantics |
+|---|---|---|
+| 1 | `layer1/YYYY-MM/<tag>-<date>.md` | session notes (append, dated) |
+| 2 | `layer2/current-state.md` | "where are we now" (always overwritten) |
+| 3 | `layer3/YYYY-MM-<tag>-archive.md` | monthly compaction of old notes |
+
+**Three rules learned in production:**
+
+1. *Every step is checkpointed.* An interrupted handover is detected
+   (`agent-handover check` → exit 1) and resumed without re-running done steps.
+2. *A `PAUSE` file is an absolute kill-switch.* Agents that write to your repos
+   need a brake a human can pull with `touch PAUSE`.
+3. *The filesystem is the source of truth.* Remote layers (NotebookLM, vector
+   stores) are optional accelerators; the local copy is always enough to boot.
+
+## Install
+
+```bash
+pip install agent-handover   # or: pip install -e . from a clone
+```
+
+## Usage
+
+```python
+from pathlib import Path
+from agent_handover import Checkpoint, HandoverEngine, MemoryStore, Step, GitBackend
+
+store = MemoryStore("memory/")
+cp = Checkpoint(".agent-handover/checkpoint.json")
+git = GitBackend(".", paths=["memory/"])
+
+engine = HandoverEngine(
+    steps=[
+        Step("session_note", lambda: store.write(1, notes, tag="refactor")),
+        Step("current_state", lambda: store.write(2, snapshot)),
+        Step("publish", lambda: git.publish("handover: session sync")),
+    ],
+    checkpoint=cp,
+    pause_file=Path.home() / ".agent_handover" / "PAUSE",
+)
+engine.run()  # resumes pending steps automatically after a crash
+```
+
+In your agent's bootstrap (CLAUDE.md / AGENTS.md):
+
+```bash
+agent-handover check   # exit 1 → finish the interrupted handover first
+```
+
+## Status & roadmap
+
+- [x] checkpointed engine, 3-layer Markdown store, git backend, pause guardrail
+- [ ] handover quality scoring (was the note actually useful next session?)
+- [ ] adapters: NotebookLM, sqlite-vec
+- [ ] `agent-handover run` with declarative step config (TOML)
+
+Issues and PRs welcome — especially reports from other agent stacks
+(Codex CLI, Cline, OpenCode).
+
+## License
+
+MIT

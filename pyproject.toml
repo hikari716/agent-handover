@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-handover"
+version = "0.1.0"
+description = "Session handover engine for AI coding agents: checkpointed, resumable, backend-agnostic persistent memory."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Hiroyuki Nagashima" }]
+keywords = ["ai-agents", "memory", "handover", "context", "llm", "claude", "codex"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/hikari716/agent-handover"
+Issues = "https://github.com/hikari716/agent-handover/issues"
+
+[project.scripts]
+agent-handover = "agent_handover.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_handover"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
