@@ -109,12 +109,35 @@ engine.run()                              # writes memory/, publishes, checkpoin
 See [`examples/codex-cli/`](./examples/codex-cli/) for a runnable end-of-session
 script and the `AGENTS.md` block.
 
+## Use with Cline
+
+A first-class adapter for [Cline](https://cline.bot), the autonomous coding
+agent for VS Code. Cline reads a **directory** of rule files (`.clinerules/`),
+so the adapter installs a dedicated, idempotent rule file that never touches
+your other rules:
+
+```python
+from agent_handover.adapters.cline import install_clinerules, build_cline_handover_engine
+
+install_clinerules(".clinerules")         # writes .clinerules/00-agent-handover.md
+
+engine = build_cline_handover_engine(     # one call for the end-of-session hook
+    session_note="reviewed PR #42; released v0.3.0",
+    current_state="parser refactor merged; next: TOML step config",
+)
+engine.run()                              # writes memory/, publishes, checkpointed
+```
+
+See [`examples/cline/`](./examples/cline/) for a runnable end-of-session script
+and the `.clinerules/` rule file.
+
 ## Status & roadmap
 
 - [x] checkpointed engine, 3-layer Markdown store, git backend, pause guardrail
 - [x] adapter: **Codex CLI** (`AGENTS.md` bootstrap + end-of-session handover)
+- [x] adapter: **Cline** (`.clinerules/` rule file + end-of-session handover)
 - [ ] handover quality scoring (was the note actually useful next session?)
-- [ ] adapters: OpenCode, Cline, NotebookLM, sqlite-vec
+- [ ] adapters: OpenCode, NotebookLM, sqlite-vec
 - [ ] `agent-handover run` with declarative step config (TOML)
 
 Issues and PRs welcome — especially reports from other agent stacks

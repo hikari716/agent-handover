@@ -5,7 +5,8 @@ start and (2) a one-call end-of-session handover builder.
 
 Available:
     codex  — OpenAI Codex CLI (AGENTS.md bootstrap + end-of-session handover)
+    cline  — Cline for VS Code (.clinerules/ rule file + end-of-session handover)
 """
-from agent_handover.adapters import codex
+from agent_handover.adapters import cline, codex
 
-__all__ = ["codex"]
+__all__ = ["codex", "cline"]

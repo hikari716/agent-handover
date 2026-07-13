@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 — 2026-07-13
+
+- **Cline adapter** (`agent_handover.adapters.cline`):
+  - `install_clinerules()` — idempotently install a dedicated
+    `.clinerules/00-agent-handover.md` rule file (creates the directory,
+    preserves sibling rule files, rewrites only its own marked block)
+  - `build_cline_handover_engine()` — one-call end-of-session handover
+    (Layer-1 note + Layer-2 current-state + git publish), fully checkpointed
+- `examples/cline/` — runnable end-of-session script + `.clinerules/` rule file
+- 7 new unit tests (31 total)
+
 ## 0.2.0 — 2026-07-13
 
 - **Codex CLI adapter** (`agent_handover.adapters.codex`):
