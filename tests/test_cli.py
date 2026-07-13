@@ -23,3 +23,35 @@ def test_status_runs(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "in_progress" in out
     assert "[ ] a" in out
+
+
+def _write_config(tmp_path, mem, cp):
+    cfg = tmp_path / "handover.toml"
+    cfg.write_text(
+        f'[handover]\nmemory_dir = "{mem}"\ntag = "codex"\ncheckpoint = "{cp}"\n\n'
+        f'[note]\nsession = "from file"\n\n'
+        f'[backend]\ntype = "null"\n',
+        encoding="utf-8",
+    )
+    return cfg
+
+
+def test_run_executes_handover(tmp_path, capsys):
+    mem = tmp_path / "memory"
+    cp = tmp_path / "cp.json"
+    cfg = _write_config(tmp_path, mem, cp)
+    assert main(["run", "--config", str(cfg), "--note", "did the thing"]) == 0
+    out = capsys.readouterr().out
+    assert "session_note" in out and "publish" in out
+    current = mem / "layer2" / "current-state.md"
+    assert "did the thing" in current.read_text(encoding="utf-8")
+    # checkpoint marked complete (exit code 2 = completed)
+    assert main(["check", "--checkpoint", str(cp)]) == 2
+
+
+def test_run_note_from_config_when_flag_absent(tmp_path):
+    mem = tmp_path / "memory"
+    cp = tmp_path / "cp.json"
+    cfg = _write_config(tmp_path, mem, cp)
+    assert main(["run", "--config", str(cfg)]) == 0
+    assert "from file" in (mem / "layer2" / "current-state.md").read_text(encoding="utf-8")

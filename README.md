@@ -88,6 +88,21 @@ In your agent's bootstrap (CLAUDE.md / AGENTS.md):
 agent-handover check   # exit 1 → finish the interrupted handover first
 ```
 
+## Declarative handover (`agent-handover run`)
+
+Don't want to write Python? Describe the handover in a TOML file and run it from
+the CLI — same checkpointed engine, as data:
+
+```bash
+agent-handover run --config .agent-handover/handover.toml --note "what happened"
+# local only (no git push):
+agent-handover run --config .agent-handover/handover.toml --note "wip" --no-push
+```
+
+CLI flags (`--note`, `--current-state`, `--no-push`, `--checkpoint`) override the
+file, so one config serves every session. See
+[`examples/run/`](./examples/run/) for a starter `handover.toml`.
+
 ## Use with Codex CLI
 
 A first-class adapter for the [OpenAI Codex CLI](https://developers.openai.com/codex/cli).
@@ -159,9 +174,9 @@ script and the `AGENTS.md` block.
 - [x] adapter: **Codex CLI** (`AGENTS.md` bootstrap + end-of-session handover)
 - [x] adapter: **Cline** (`.clinerules/` rule file + end-of-session handover)
 - [x] adapter: **OpenCode** (`AGENTS.md` bootstrap + end-of-session handover)
+- [x] `agent-handover run` with declarative step config (TOML)
 - [ ] handover quality scoring (was the note actually useful next session?)
 - [ ] adapters: NotebookLM, sqlite-vec
-- [ ] `agent-handover run` with declarative step config (TOML)
 
 Issues and PRs welcome — especially reports from other agent stacks
 (Codex CLI, Cline, OpenCode).

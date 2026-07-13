@@ -1,0 +1,26 @@
+# Declarative handover config for `agent-handover run`.
+#
+#   agent-handover run --config examples/run/handover.toml --note "what happened"
+#
+# Everything here can be overridden on the CLI: --note, --current-state,
+# --no-push, --checkpoint. See `agent_handover.config` for the full schema.
+
+[handover]
+memory_dir = "memory"
+tag        = "codex"
+checkpoint = ".agent-handover/checkpoint.json"
+# pause_file = "~/.agent_handover/PAUSE"   # optional absolute kill-switch
+
+[note]
+# session / current_state are optional here — pass --note on the CLI instead.
+# session       = "reviewed PR #42; released"
+# current_state = "parser refactor merged; next: TOML step config"
+
+[backend]
+type   = "git"          # "git" (default) or "null" for local-only
+repo_dir = "."
+paths  = ["memory"]
+push   = true
+branch = "main"
+remote = "origin"
+# message = "handover: codex session"   # optional commit message

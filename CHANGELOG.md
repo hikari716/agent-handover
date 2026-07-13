@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 — 2026-07-13
+
+- **`agent-handover run`** — execute a full end-of-session handover from a
+  declarative TOML config, no Python required (`agent_handover.config`):
+  - `load_config()` / `build_engine_from_config()` with `git`/`null` backends
+  - CLI flags override the file: `--note`, `--current-state`, `--no-push`,
+    `--checkpoint`
+  - CLI refactored to subcommands; `check`/`status` behavior unchanged
+- `examples/run/` — starter `handover.toml` + guide
+- `tomli` dependency on Python 3.10 (stdlib `tomllib` on 3.11+)
+- 9 new unit tests (52 total)
+
 ## 0.4.0 — 2026-07-13
 
 - **OpenCode adapter** (`agent_handover.adapters.opencode`):
