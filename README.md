@@ -88,11 +88,33 @@ In your agent's bootstrap (CLAUDE.md / AGENTS.md):
 agent-handover check   # exit 1 → finish the interrupted handover first
 ```
 
+## Use with Codex CLI
+
+A first-class adapter for the [OpenAI Codex CLI](https://developers.openai.com/codex/cli).
+Install the bootstrap block into your repo's `AGENTS.md` (idempotent, preserves
+your other rules) and write a handover at the end of each session:
+
+```python
+from agent_handover.adapters.codex import install_agents_md, build_codex_handover_engine
+
+install_agents_md("AGENTS.md")            # Codex runs `agent-handover check` on start
+
+engine = build_codex_handover_engine(     # one call for the end-of-session hook
+    session_note="reviewed PR #42; released v0.2.0",
+    current_state="parser refactor merged; next: TOML step config",
+)
+engine.run()                              # writes memory/, publishes, checkpointed
+```
+
+See [`examples/codex-cli/`](./examples/codex-cli/) for a runnable end-of-session
+script and the `AGENTS.md` block.
+
 ## Status & roadmap
 
 - [x] checkpointed engine, 3-layer Markdown store, git backend, pause guardrail
+- [x] adapter: **Codex CLI** (`AGENTS.md` bootstrap + end-of-session handover)
 - [ ] handover quality scoring (was the note actually useful next session?)
-- [ ] adapters: NotebookLM, sqlite-vec
+- [ ] adapters: OpenCode, Cline, NotebookLM, sqlite-vec
 - [ ] `agent-handover run` with declarative step config (TOML)
 
 Issues and PRs welcome — especially reports from other agent stacks

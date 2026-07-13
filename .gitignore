@@ -3,3 +3,11 @@ __pycache__/
 .pytest_cache/
 dist/
 .agent-handover/
+
+# local agent/tooling config — keep private, never publish
+CLAUDE.md
+CLAUDE.md.bak_*
+.claude/
+.claudeignore
+.grepai/
+.monitor/

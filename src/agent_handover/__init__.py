@@ -8,5 +8,5 @@ from agent_handover.memory import MemoryStore
 from agent_handover.engine import HandoverEngine, Step
 from agent_handover.backends import GitBackend, NullBackend
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["Checkpoint", "MemoryStore", "HandoverEngine", "Step", "GitBackend", "NullBackend"]
