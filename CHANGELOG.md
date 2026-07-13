@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 — 2026-07-13
+
+- **OpenCode adapter** (`agent_handover.adapters.opencode`):
+  - `install_agents_md()` / `agents_md_block()` — bootstrap OpenCode via its
+    `AGENTS.md` rules file (idempotent, preserves existing rules)
+  - `build_opencode_handover_engine()` — one-call end-of-session handover
+    (Layer-1 note + Layer-2 current-state + git publish), fully checkpointed
+- Refactor: extracted the shared `AGENTS.md` block/installer into
+  `agent_handover.adapters._agents_md`; Codex and OpenCode are now thin
+  wrappers over it (Codex's public API and output are unchanged)
+- `examples/opencode/` — runnable end-of-session script + `AGENTS.md` block
+- 12 new unit tests incl. a regression guard that the Codex block stays
+  byte-identical to its shipped example (43 total)
+
 ## 0.3.0 — 2026-07-13
 
 - **Cline adapter** (`agent_handover.adapters.cline`):

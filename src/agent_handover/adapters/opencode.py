@@ -1,20 +1,17 @@
-"""Codex CLI adapter.
+"""OpenCode adapter.
 
-Wire `agent-handover` into the OpenAI Codex CLI so that:
+Wire `agent-handover` into [OpenCode](https://opencode.ai) so that:
 
-- at the START of a Codex session, `agent-handover check` runs from AGENTS.md
-  and forces an interrupted handover to finish before new work begins;
+- at the START of an OpenCode session, `agent-handover check` runs from
+  AGENTS.md and forces an interrupted handover to finish before new work;
 - at the END of a session, a single call writes the session note + current
   state and (optionally) publishes them through a backend.
 
-Codex CLI reads an ``AGENTS.md`` file at the repo root as its bootstrap / rules
-file (the Codex equivalent of ``CLAUDE.md``). This adapter generates and
-installs the small block that belongs there, and gives you a one-call engine
-builder for the end-of-session hook.
-
-The ``AGENTS.md`` block and installer are shared with other AGENTS.md-based
-agents via :mod:`agent_handover.adapters._agents_md`; this module is the thin
-Codex-specific wrapper.
+OpenCode reads an ``AGENTS.md`` file at the repo root as its rules/bootstrap
+file (project-level; a global ``~/.config/opencode/AGENTS.md`` also exists). It
+shares this mechanism with Codex CLI, so the block and installer come from the
+shared :mod:`agent_handover.adapters._agents_md` helper — this module is the
+thin OpenCode-specific wrapper (its own example path + engine tag).
 """
 from __future__ import annotations
 
@@ -33,14 +30,14 @@ __all__ = [
     "DEFAULT_CHECKPOINT",
     "agents_md_block",
     "install_agents_md",
-    "build_codex_handover_engine",
+    "build_opencode_handover_engine",
 ]
 
-EXAMPLE_HINT = "examples/codex-cli/end_of_session.py"
+EXAMPLE_HINT = "examples/opencode/end_of_session.py"
 
 
 def agents_md_block(checkpoint: str = DEFAULT_CHECKPOINT) -> str:
-    """Return the AGENTS.md snippet Codex should run at session start/end."""
+    """Return the AGENTS.md snippet OpenCode should run at session start/end."""
     return _agents_md.render_block(checkpoint, EXAMPLE_HINT)
 
 
@@ -50,25 +47,26 @@ def install_agents_md(
 ) -> bool:
     """Idempotently insert or update the agent-handover block in AGENTS.md.
 
-    Preserves any existing content outside the block. Returns True if the file
-    was created or changed, False if it was already up to date.
+    Preserves any existing content outside the block (OpenCode combines these
+    project rules into the model's context). Returns True if the file was
+    created or changed, False if it was already up to date.
     """
     return _agents_md.install(path, agents_md_block(checkpoint))
 
 
-def build_codex_handover_engine(
+def build_opencode_handover_engine(
     *,
     session_note: str,
     current_state: str,
     memory_dir: Path | str = "memory",
-    tag: str = "codex",
+    tag: str = "opencode",
     repo_dir: Path | str = ".",
     publish_paths: list[str] | None = None,
     push: bool = True,
     pause_file: Path | str | None = None,
     checkpoint: Path | str = DEFAULT_CHECKPOINT,
 ) -> HandoverEngine:
-    """Build a ready-to-run end-of-session HandoverEngine for Codex CLI.
+    """Build a ready-to-run end-of-session HandoverEngine for OpenCode.
 
     Writes a Layer-1 session note and the Layer-2 current-state snapshot, then
     publishes ``memory/`` via git. When ``push`` is False, a NullBackend is used
@@ -82,7 +80,7 @@ def build_codex_handover_engine(
     steps = [
         Step("session_note", lambda: store.write(1, session_note, tag=tag)),
         Step("current_state", lambda: store.write(2, current_state)),
-        Step("publish", lambda: _require(backend.publish(f"handover: codex session ({tag})"))),
+        Step("publish", lambda: _require(backend.publish(f"handover: opencode session ({tag})"))),
     ]
     return HandoverEngine(
         steps=steps,

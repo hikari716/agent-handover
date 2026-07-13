@@ -131,13 +131,36 @@ engine.run()                              # writes memory/, publishes, checkpoin
 See [`examples/cline/`](./examples/cline/) for a runnable end-of-session script
 and the `.clinerules/` rule file.
 
+## Use with OpenCode
+
+A first-class adapter for [OpenCode](https://opencode.ai). OpenCode reads
+`AGENTS.md` as its rules file (the same mechanism as Codex), so this adapter
+shares its block and installer with the Codex adapter — only the example path
+and engine tag differ:
+
+```python
+from agent_handover.adapters.opencode import install_agents_md, build_opencode_handover_engine
+
+install_agents_md("AGENTS.md")            # OpenCode runs `agent-handover check` on start
+
+engine = build_opencode_handover_engine(  # one call for the end-of-session hook
+    session_note="reviewed PR #42; released v0.4.0",
+    current_state="parser refactor merged; next: TOML step config",
+)
+engine.run()                              # writes memory/, publishes, checkpointed
+```
+
+See [`examples/opencode/`](./examples/opencode/) for a runnable end-of-session
+script and the `AGENTS.md` block.
+
 ## Status & roadmap
 
 - [x] checkpointed engine, 3-layer Markdown store, git backend, pause guardrail
 - [x] adapter: **Codex CLI** (`AGENTS.md` bootstrap + end-of-session handover)
 - [x] adapter: **Cline** (`.clinerules/` rule file + end-of-session handover)
+- [x] adapter: **OpenCode** (`AGENTS.md` bootstrap + end-of-session handover)
 - [ ] handover quality scoring (was the note actually useful next session?)
-- [ ] adapters: OpenCode, NotebookLM, sqlite-vec
+- [ ] adapters: NotebookLM, sqlite-vec
 - [ ] `agent-handover run` with declarative step config (TOML)
 
 Issues and PRs welcome — especially reports from other agent stacks

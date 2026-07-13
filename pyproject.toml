@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-handover"
-version = "0.3.0"
+version = "0.4.0"
 description = "Session handover engine for AI coding agents: checkpointed, resumable, backend-agnostic persistent memory."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [{ name = "Hiroyuki Nagashima" }]
-keywords = ["ai-agents", "memory", "handover", "context", "llm", "claude", "codex", "cline"]
+keywords = ["ai-agents", "memory", "handover", "context", "llm", "claude", "codex", "cline", "opencode"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
