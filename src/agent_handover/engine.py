@@ -40,7 +40,9 @@ class HandoverEngine:
                  pause_file: Path | str | None = None):
         self.steps = steps
         self.checkpoint = checkpoint
-        self.pause_file = Path(pause_file) if pause_file else None
+        # expanduser so a configured "~/.agent_handover/PAUSE" kill-switch is
+        # honored (a bare Path("~/...") never matches the real home directory).
+        self.pause_file = Path(pause_file).expanduser() if pause_file else None
 
     def _check_pause(self) -> None:
         if self.pause_file and self.pause_file.exists():

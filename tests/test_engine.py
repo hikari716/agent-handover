@@ -1,3 +1,5 @@
+import pathlib
+
 import pytest
 
 from agent_handover.checkpoint import Checkpoint, RESUME_COMPLETED
@@ -21,6 +23,21 @@ def test_full_run_completes(tmp_path):
     engine, cp = make_engine(tmp_path, log)
     assert engine.run() == ["a", "b", "c"]
     assert cp.resume_code() == RESUME_COMPLETED
+
+
+def test_pause_file_is_expanduser(tmp_path):
+    engine, _ = make_engine(tmp_path, [], pause_file="~/.agent_handover/PAUSE")
+    # "~" must resolve to the real home dir, not a literal "~" directory
+    assert engine.pause_file == (pathlib.Path.home() / ".agent_handover" / "PAUSE")
+    assert "~" not in str(engine.pause_file)
+
+
+def test_pause_file_triggers_when_present(tmp_path):
+    pause = tmp_path / "PAUSE"
+    pause.write_text("stop", encoding="utf-8")
+    engine, _ = make_engine(tmp_path, [], pause_file=pause)
+    with pytest.raises(PauseError):
+        engine.run()
 
 
 def test_failure_keeps_step_pending_then_resumes(tmp_path):

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 — 2026-07-13
+
+- Fix: the `pause_file` kill-switch is now `expanduser()`-ed, so a configured
+  `~/.agent_handover/PAUSE` (as shown in `examples/run/handover.toml`) is
+  actually honored — previously a leading `~` never matched the real home
+  directory. Affects the engine and every path that feeds it (adapters + `run`).
+- 2 new unit tests (54 total)
+
 ## 0.5.0 — 2026-07-13
 
 - **`agent-handover run`** — execute a full end-of-session handover from a
