@@ -88,6 +88,17 @@ In your agent's bootstrap (CLAUDE.md / AGENTS.md):
 agent-handover check   # exit 1 → finish the interrupted handover first
 ```
 
+For automation and dashboards, `status --json` emits one JSON object without
+extra log output:
+
+```bash
+agent-handover status --json
+# {"status":"in_progress","steps":{"publish":"pending"},"pending":["publish"],...}
+```
+
+The object always includes `status`, `steps`, `pending`, `started_at`, and
+`finished_at`. Human-readable output remains the default.
+
 ## Declarative handover (`agent-handover run`)
 
 Don't want to write Python? Describe the handover in a TOML file and run it from
