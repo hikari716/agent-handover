@@ -124,6 +124,19 @@ engine.run()                              # writes memory/, publishes, checkpoin
 See [`examples/codex-cli/`](./examples/codex-cli/) for a runnable end-of-session
 script and the `AGENTS.md` block.
 
+## Use with Claude Code
+
+Claude Code reads project instructions from `CLAUDE.md`. Add the handover
+snippet there and run the end-of-session handover script after each task:
+
+```bash
+agent-handover check --checkpoint .agent-handover/checkpoint.json
+AH_PUSH=0 python examples/claude-code/end_of_session.py "wip: parser refactor"
+```
+
+See [`examples/claude-code/`](./examples/claude-code/) for the copyable
+`CLAUDE.md` block and runnable script.
+
 ## Use with Cline
 
 A first-class adapter for [Cline](https://cline.bot), the autonomous coding
@@ -172,6 +185,7 @@ script and the `AGENTS.md` block.
 
 - [x] checkpointed engine, 3-layer Markdown store, git backend, pause guardrail
 - [x] adapter: **Codex CLI** (`AGENTS.md` bootstrap + end-of-session handover)
+- [x] example: **Claude Code** (`CLAUDE.md` bootstrap + end-of-session handover)
 - [x] adapter: **Cline** (`.clinerules/` rule file + end-of-session handover)
 - [x] adapter: **OpenCode** (`AGENTS.md` bootstrap + end-of-session handover)
 - [x] `agent-handover run` with declarative step config (TOML)
