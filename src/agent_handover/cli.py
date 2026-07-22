@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -26,6 +27,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_status = sub.add_parser("status", help="print checkpoint state")
     p_status.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
+    p_status.add_argument(
+        "--json", dest="json_output", action="store_true", help="print machine-readable JSON"
+    )
 
     p_run = sub.add_parser("run", help="run a declarative handover from a TOML config")
     p_run.add_argument("--config", type=Path, required=True)
@@ -47,11 +51,20 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "status":
         cp = Checkpoint(args.checkpoint)
         data = cp.load()
+        pending = cp.pending_steps()
+        if args.json_output:
+            print(json.dumps({
+                "status": data["status"],
+                "steps": data.get("steps", {}),
+                "pending": pending,
+                "started_at": data.get("started_at"),
+                "finished_at": data.get("finished_at"),
+            }, ensure_ascii=False))
+            return 0
         print(f"status: {data['status']}")
         for name, state in data.get("steps", {}).items():
             mark = "x" if state == "done" else " "
             print(f"  [{mark}] {name}")
-        pending = cp.pending_steps()
         if data["status"] == "in_progress" and pending:
             print(f"pending: {', '.join(pending)}")
         return 0
