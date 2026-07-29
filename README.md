@@ -88,6 +88,19 @@ In your agent's bootstrap (CLAUDE.md / AGENTS.md):
 agent-handover check   # exit 1 → finish the interrupted handover first
 ```
 
+`--checkpoint` defaults to `.agent-handover/checkpoint.json`. To set the path
+once for every command — useful when one repo is driven by several agents or
+worktrees — export `AGENT_HANDOVER_CHECKPOINT`:
+
+```bash
+export AGENT_HANDOVER_CHECKPOINT=.agent-handover/worktree-a.json
+agent-handover check   # uses the env var; --checkpoint still wins over it
+```
+
+Precedence: `--checkpoint` > `$AGENT_HANDOVER_CHECKPOINT` > the built-in
+default (for `run`, the env var also beats `[handover].checkpoint` in the
+config file, like any other CLI override).
+
 ## Declarative handover (`agent-handover run`)
 
 Don't want to write Python? Describe the handover in a TOML file and run it from
