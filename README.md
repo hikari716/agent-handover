@@ -103,6 +103,14 @@ CLI flags (`--note`, `--current-state`, `--no-push`, `--checkpoint`) override th
 file, so one config serves every session. See
 [`examples/run/`](./examples/run/) for a starter `handover.toml`.
 
+To preview a run before wiring it into a hook, `--dry-run` prints the resolved
+plan (memory_dir, tag, checkpoint, backend, step order) and exits 0 without
+executing any step — no file writes, no git:
+
+```bash
+agent-handover run --config .agent-handover/handover.toml --dry-run
+```
+
 ## Use with Codex CLI
 
 A first-class adapter for the [OpenAI Codex CLI](https://developers.openai.com/codex/cli).

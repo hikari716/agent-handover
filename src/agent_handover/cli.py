@@ -34,6 +34,8 @@ def _build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--no-push", action="store_true", help="force local-only (no git push)")
     p_run.add_argument("--checkpoint", type=Path, default=None,
                        help="override [handover].checkpoint")
+    p_run.add_argument("--dry-run", action="store_true",
+                       help="print the resolved plan and exit without executing any step")
     return parser
 
 
@@ -58,9 +60,18 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "run":
         # Imported lazily so `check`/`status` don't require the TOML parser.
-        from agent_handover.config import build_engine_from_config, load_config
+        from agent_handover.config import build_engine_from_config, load_config, resolve_plan
 
         config = load_config(args.config)
+        if args.dry_run:
+            plan = resolve_plan(config, checkpoint=args.checkpoint)
+            print("dry run (no steps executed):")
+            print(f"  memory_dir: {plan['memory_dir']}")
+            print(f"  tag: {plan['tag']}")
+            print(f"  checkpoint: {plan['checkpoint']}")
+            print(f"  backend: {plan['backend']}")
+            print(f"  steps: {', '.join(plan['steps'])}")
+            return 0
         engine = build_engine_from_config(
             config,
             note=args.note,
