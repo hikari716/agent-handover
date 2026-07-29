@@ -42,11 +42,36 @@ from agent_handover.memory import MemoryStore
 
 DEFAULT_CHECKPOINT = ".agent-handover/checkpoint.json"
 
+#: Ordered step names of a declarative handover (see build_engine_from_config).
+PLAN_STEPS = ("session_note", "current_state", "publish")
+
 
 def load_config(path: Path | str) -> dict[str, Any]:
     """Parse a TOML handover config file into a dict."""
     with Path(path).open("rb") as fh:
         return tomllib.load(fh)
+
+
+def resolve_plan(
+    config: dict[str, Any],
+    *,
+    checkpoint: Path | str | None = None,
+) -> dict[str, Any]:
+    """Resolve what a run would do, without building or executing anything.
+
+    Returns the effective ``memory_dir``, ``tag``, ``checkpoint``, ``backend``
+    type, and the ordered step names — the plan printed by
+    ``agent-handover run --dry-run``. ``checkpoint`` (CLI ``--checkpoint``)
+    overrides ``[handover].checkpoint``, mirroring ``build_engine_from_config``.
+    """
+    handover = config.get("handover", {})
+    return {
+        "memory_dir": str(handover.get("memory_dir", "memory")),
+        "tag": handover.get("tag", "general"),
+        "checkpoint": str(checkpoint or handover.get("checkpoint", DEFAULT_CHECKPOINT)),
+        "backend": config.get("backend", {}).get("type", "git"),
+        "steps": list(PLAN_STEPS),
+    }
 
 
 def build_engine_from_config(

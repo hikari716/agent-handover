@@ -5,6 +5,7 @@ from agent_handover.config import (
     _build_backend,
     build_engine_from_config,
     load_config,
+    resolve_plan,
 )
 from agent_handover.backends import GitBackend, NullBackend
 
@@ -35,6 +36,35 @@ def test_build_engine_writes_memory_and_completes(tmp_path):
     current = mem / "layer2" / "current-state.md"
     assert "state Y" in current.read_text(encoding="utf-8")
     assert Checkpoint(cp).resume_code() == RESUME_COMPLETED
+
+
+def test_resolve_plan_defaults_and_overrides(tmp_path):
+    assert resolve_plan({}) == {
+        "memory_dir": "memory",
+        "tag": "general",
+        "checkpoint": ".agent-handover/checkpoint.json",
+        "backend": "git",
+        "steps": ["session_note", "current_state", "publish"],
+    }
+    config = {
+        "handover": {"memory_dir": "mem", "tag": "codex", "checkpoint": "cp.json"},
+        "backend": {"type": "null"},
+    }
+    plan = resolve_plan(config, checkpoint=tmp_path / "override.json")
+    assert plan["memory_dir"] == "mem"
+    assert plan["tag"] == "codex"
+    assert plan["checkpoint"] == str(tmp_path / "override.json")
+    assert plan["backend"] == "null"
+
+
+def test_resolve_plan_matches_engine_step_order(tmp_path):
+    config = {
+        "handover": {"memory_dir": str(tmp_path / "memory")},
+        "note": {"session": "hi"},
+        "backend": {"type": "null"},
+    }
+    engine = build_engine_from_config(config)
+    assert resolve_plan(config)["steps"] == [s.name for s in engine.steps]
 
 
 def test_cli_note_overrides_config(tmp_path):
