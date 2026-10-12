@@ -101,9 +101,12 @@ def _build_backend(backend_cfg: dict[str, Any], memory_dir: str, push: bool | No
         return NullBackend()
     if btype == "git":
         do_push = backend_cfg.get("push", True) if push is None else push
+        paths = backend_cfg.get("paths") or [str(memory_dir)]
+        if isinstance(paths, str):  # `paths = "memory"` must not become m, e, m, ...
+            paths = [paths]
         return GitBackend(
             backend_cfg.get("repo_dir", "."),
-            paths=backend_cfg.get("paths") or [str(memory_dir)],
+            paths=paths,
             branch=backend_cfg.get("branch", "main"),
             remote=backend_cfg.get("remote", "origin"),
             push=do_push,

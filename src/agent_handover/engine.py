@@ -52,8 +52,10 @@ class HandoverEngine:
         """Run all (or pending) steps. Returns the list of steps executed."""
         self._check_pause()
 
-        pending = set(self.checkpoint.pending_steps()) if resume else None
+        # Read pending steps *after* start(): start() registers steps unknown to
+        # an interrupted checkpoint as pending, so they are not silently skipped.
         self.checkpoint.start([s.name for s in self.steps])
+        pending = set(self.checkpoint.pending_steps()) if resume else None
 
         executed: list[str] = []
         for step in self.steps:

@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+- Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
+  steps the checkpoint did not know about (it previously executed nothing and
+  still marked the run completed).
+- Fix: `GitBackend.publish()` treats "nothing staged under `paths`" as success
+  even when the repo has unrelated untracked or modified files (git's
+  "nothing added to commit…" / "no changes added to commit" messages made it
+  fail before).
+- Fix: `MemoryStore.read_latest(tag=...)` sanitizes the tag like `write()` and
+  matches the exact filename, so `"my tag"` round-trips and `"codex"` no
+  longer returns `codex-cli` notes.
+- Fix: AGENTS.md / `.clinerules` installers no longer delete human text after a
+  stray BEGIN marker on re-install, and no longer append another managed
+  block on every re-install when a stray END marker precedes it.
+- Fix: `[backend].paths = "memory"` (a string) is accepted as one path.
+- 46 new unit tests (100 total); coverage 92% -> 98%.
+
 ## 0.5.1 — 2026-07-13
 
 - Fix: the `pause_file` kill-switch is now `expanduser()`-ed, so a configured

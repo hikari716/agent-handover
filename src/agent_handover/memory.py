@@ -11,10 +11,15 @@ the filesystem copy is always the source of truth and the fallback.
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 
 HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
+
+
+def _safe_tag(tag: str) -> str:
+    return tag.replace("/", "-").replace(" ", "_")
 
 
 class MemoryStore:
@@ -28,7 +33,7 @@ class MemoryStore:
             raise ValueError(f"invalid layer: {layer}")
         date_str = date_str or datetime.now().strftime("%Y-%m-%d")
         ym = date_str[:7]
-        safe_tag = tag.replace("/", "-").replace(" ", "_")
+        safe_tag = _safe_tag(tag)
 
         if layer == 1:
             target = self.root / "layer1" / ym / f"{safe_tag}-{date_str}.md"
@@ -56,7 +61,12 @@ class MemoryStore:
             return ""
         files = sorted(sub.rglob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
         if tag:
-            files = [f for f in files if tag in f.name]
+            # Match the exact filename shape write() produces, so tag "codex"
+            # does not pick up "codex-cli" notes and "my tag" finds "my_tag".
+            t = re.escape(_safe_tag(tag))
+            pattern = (rf"{t}-\d{{4}}-\d{{2}}-\d{{2}}\.md" if layer == 1
+                       else rf"\d{{4}}-\d{{2}}-{t}-archive\.md")
+            files = [f for f in files if re.fullmatch(pattern, f.name)]
         return files[0].read_text(encoding="utf-8") if files else ""
 
     # -- compaction ------------------------------------------------------
