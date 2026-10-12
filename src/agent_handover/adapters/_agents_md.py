@@ -42,6 +42,22 @@ def render_block(checkpoint: str, example_hint: str) -> str:
     )
 
 
+def splice(existing: str, block: str) -> str:
+    """Return ``existing`` with the managed block replaced by (or appended as) ``block``.
+
+    The managed region is the first END marker and the BEGIN marker closest
+    before it, so a stray/orphaned BEGIN marker earlier in the file (and the
+    human text after it) is never swallowed.
+    """
+    end = existing.find(END_MARKER)
+    begin = existing.rfind(BEGIN_MARKER, 0, end) if end != -1 else -1
+    if begin != -1:
+        return existing[:begin] + block + existing[end + len(END_MARKER):]
+    if existing.strip():
+        return existing.rstrip() + "\n\n" + block + "\n"
+    return block + "\n"
+
+
 def install(path: Path | str, block: str) -> bool:
     """Idempotently insert or update ``block`` in an AGENTS.md file.
 
@@ -51,14 +67,7 @@ def install(path: Path | str, block: str) -> bool:
     path = Path(path)
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
 
-    if BEGIN_MARKER in existing and END_MARKER in existing:
-        pre = existing.split(BEGIN_MARKER, 1)[0]
-        post = existing.split(END_MARKER, 1)[1]
-        updated = f"{pre}{block}{post}"
-    elif existing.strip():
-        updated = existing.rstrip() + "\n\n" + block + "\n"
-    else:
-        updated = block + "\n"
+    updated = splice(existing, block)
 
     if updated == existing:
         return False

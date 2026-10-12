@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_handover.adapters import _agents_md
 from agent_handover.backends import GitBackend, NullBackend
 from agent_handover.checkpoint import Checkpoint
 from agent_handover.engine import HandoverEngine, Step
@@ -71,14 +72,7 @@ def install_clinerules(
     block = clinerules_block(checkpoint)
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
 
-    if BEGIN_MARKER in existing and END_MARKER in existing:
-        pre = existing.split(BEGIN_MARKER, 1)[0]
-        post = existing.split(END_MARKER, 1)[1]
-        updated = f"{pre}{block}{post}"
-    elif existing.strip():
-        updated = existing.rstrip() + "\n\n" + block + "\n"
-    else:
-        updated = block + "\n"
+    updated = _agents_md.splice(existing, block)
 
     if updated == existing:
         return False

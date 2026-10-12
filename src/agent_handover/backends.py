@@ -48,11 +48,15 @@ class GitBackend:
             r = self._git("add", *self.paths)
             if r.returncode != 0:
                 return False
+            # Nothing staged under our paths is a success, not a failure. Asking
+            # git directly avoids parsing commit messages, which vary ("nothing
+            # added to commit but untracked files present", "no changes added
+            # to commit", ...) whenever the repo has unrelated dirty files.
+            r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
+            if r.returncode == 0:
+                return True
             r = self._git("commit", "-m", message)
             if r.returncode != 0:
-                combined = r.stdout + r.stderr
-                if "nothing to commit" in combined:
-                    return True  # no changes is a success, not a failure
                 return False
             if self.push:
                 r = self._git("push", self.remote, self.branch)
