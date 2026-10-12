@@ -1,0 +1,13 @@
+RESULT: DONE 不具合5件修正+テスト45件追加、カバレッジ92%→98%、draft PR #14
+実測: pytest 54 passed→99 passed（-W error で警告0）/ pytest-cov 92%→98%（backends.py 49%→97%）
+回帰確認: src を main に戻すと新規テスト12件が FAIL、修正後は全件 PASS
+直した不具合（全部実測で再現してから修正）:
+ 1 engine: interrupted checkpoint にないステップを resume が飛ばし、何も実行しないまま completed にしていた
+ 2 backends: memory に変更がなくても、別の場所に未追跡/変更ファイルがあると publish が False（git のメッセージ判定漏れ）→ diff --cached で判定するよう変更
+ 3 memory: read_latest(tag) が tag を sanitize せず部分一致（"my tag" が見つからない / "codex" が codex-cli に当たる）→ ファイル名の完全一致に変更
+ 4 adapters: 迷子の BEGIN マーカーがあると再 install で人間の追記が消えていた（AGENTS.md / .clinerules）
+ 5 config: [backend].paths を文字列で書くと1文字ずつ git add されていた
+変更: src/agent_handover/{engine,backends,memory,config}.py, adapters/{_agents_md,cline}.py, tests/test_backends.py, tests/test_edge_cases.py, CHANGELOG.md（ブランチ claude/agent-handover-tests-w50wgk）
+PR: https://github.com/hikari716/agent-handover/pull/14（draft・未マージ）
+公開APIは変更なし（内部ヘルパー _agents_md.splice を追加）
+残り: GitBackend の commit が paths 外の staged 変更も巻き込む件（挙動変更になるため判断待ち）/ checkpoint の JSON が壊れていると check が exit 1（=要再開）に見える件
