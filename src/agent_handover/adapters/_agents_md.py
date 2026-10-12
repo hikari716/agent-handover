@@ -45,14 +45,18 @@ def render_block(checkpoint: str, example_hint: str) -> str:
 def splice(existing: str, block: str) -> str:
     """Return ``existing`` with the managed block replaced by (or appended as) ``block``.
 
-    The managed region is the first END marker and the BEGIN marker closest
-    before it, so a stray/orphaned BEGIN marker earlier in the file (and the
-    human text after it) is never swallowed.
+    The managed region is the first END marker that has a BEGIN marker before
+    it, paired with the BEGIN marker closest before it, so a stray/orphaned
+    BEGIN marker earlier in the file (and the human text after it) is never
+    swallowed, and an orphaned END marker does not make re-installs append
+    another block each time.
     """
     end = existing.find(END_MARKER)
-    begin = existing.rfind(BEGIN_MARKER, 0, end) if end != -1 else -1
-    if begin != -1:
-        return existing[:begin] + block + existing[end + len(END_MARKER):]
+    while end != -1:
+        begin = existing.rfind(BEGIN_MARKER, 0, end)
+        if begin != -1:
+            return existing[:begin] + block + existing[end + len(END_MARKER):]
+        end = existing.find(END_MARKER, end + len(END_MARKER))
     if existing.strip():
         return existing.rstrip() + "\n\n" + block + "\n"
     return block + "\n"

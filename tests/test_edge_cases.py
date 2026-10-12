@@ -231,6 +231,16 @@ def test_splice_end_before_begin_appends():
     assert _agents_md.splice(existing, block).endswith(block + "\n")
 
 
+def test_splice_orphan_end_reinstall_is_idempotent():
+    # regression: an orphan END before the managed block made every re-install append a new block
+    block = "<!-- agent-handover:begin -->X<!-- agent-handover:end -->"
+    once = _agents_md.splice("<!-- agent-handover:end -->\ntext\n", block)
+    assert _agents_md.splice(once, block) == once
+    newer = "<!-- agent-handover:begin -->Y<!-- agent-handover:end -->"
+    updated = _agents_md.splice(once, newer)
+    assert updated.count("agent-handover:begin") == 1 and updated.endswith(newer + "\n")
+
+
 def test_splice_empty_and_whitespace():
     assert _agents_md.splice("", "B") == "B\n"
     assert _agents_md.splice("  \n", "B") == "B\n"

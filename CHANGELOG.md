@@ -13,9 +13,10 @@
   matches the exact filename, so `"my tag"` round-trips and `"codex"` no
   longer returns `codex-cli` notes.
 - Fix: AGENTS.md / `.clinerules` installers no longer delete human text after a
-  stray BEGIN marker on re-install.
+  stray BEGIN marker on re-install, and no longer append another managed
+  block on every re-install when a stray END marker precedes it.
 - Fix: `[backend].paths = "memory"` (a string) is accepted as one path.
-- 45 new unit tests (99 total); coverage 92% -> 98%.
+- 46 new unit tests (100 total); coverage 92% -> 98%.
 
 ## 0.5.1 — 2026-07-13
 
