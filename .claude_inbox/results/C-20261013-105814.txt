@@ -1,0 +1,14 @@
+RESULT: DONE 精読で実害バグ4件を再現→修正、テスト100→106全通過、draft PR #15
+次の一手: Codex/Gemini が PR #15 を検品 → ヒロがマージ判断（同日上書きの件も判断）
+判断: Layer1同日上書き(memory.write)は直さず残す / 理由: ファイル形式と再開時の冪等性が変わるためヒロ判断
+実測: pytest 100 passed → 106 passed、カバレッジ 98%→98%。新規6テストは修正前に全件失敗を確認
+直した不具合:
+ 1. GitBackend.publish が無関係な staged ファイルまで commit/push → commit を paths に限定
+ 2. 別ブランチ checkout 時に handover commit が push されず True を返す → HEAD:refs/heads/<branch> を push
+ 3. 全ステップ完了・complete前クラッシュ後の再開で全ステップ再実行 → pending のステップだけ実行
+ 4. CLI run が設定欠落/TOML不正/note欠落/PAUSE/ステップ失敗でトレースバック → 1行エラー＋exit 1
+変更点: src/agent_handover/{backends,engine,cli}.py, tests/test_regressions.py, CHANGELOG.md（ブランチ claude/agent-handover-bugs-mxhcd3）
+PR: https://github.com/hikari716/agent-handover/pull/15 (draft)
+残り: memory.write の同タグ同日上書き（docstring は append）
+秘密情報: 検出なし
+検品: 未（Codex|Gemini 待ち）

@@ -55,11 +55,15 @@ class GitBackend:
             r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
             if r.returncode == 0:
                 return True
-            r = self._git("commit", "-m", message)
+            # Limit the commit to our paths: anything else the user has staged
+            # must stay staged, not be swept into (and pushed with) a handover.
+            r = self._git("commit", "-m", message, "--", *self.paths)
             if r.returncode != 0:
                 return False
             if self.push:
-                r = self._git("push", self.remote, self.branch)
+                # Push the commit just made (HEAD), not the local `branch` ref,
+                # which may not be checked out and would leave it unpushed.
+                r = self._git("push", self.remote, f"HEAD:refs/heads/{self.branch}")
                 return r.returncode == 0
             return True
         except subprocess.TimeoutExpired:

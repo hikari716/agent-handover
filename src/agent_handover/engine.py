@@ -59,7 +59,7 @@ class HandoverEngine:
 
         executed: list[str] = []
         for step in self.steps:
-            if resume and pending is not None and pending and step.name not in pending:
+            if resume and pending is not None and step.name not in pending:
                 continue  # already done in the interrupted run
             self._check_pause()
             try:
