@@ -58,17 +58,24 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "run":
         # Imported lazily so `check`/`status` don't require the TOML parser.
-        from agent_handover.config import build_engine_from_config, load_config
+        from agent_handover.config import build_engine_from_config, load_config, tomllib
+        from agent_handover.engine import PauseError, StepError
 
-        config = load_config(args.config)
-        engine = build_engine_from_config(
-            config,
-            note=args.note,
-            current_state=args.current_state,
-            push=(False if args.no_push else None),
-            checkpoint=args.checkpoint,
-        )
-        executed = engine.run()
+        # Expected failures get a one-line message and exit 1 instead of a
+        # traceback; the checkpoint keeps a failed step pending for `check`.
+        try:
+            config = load_config(args.config)
+            engine = build_engine_from_config(
+                config,
+                note=args.note,
+                current_state=args.current_state,
+                push=(False if args.no_push else None),
+                checkpoint=args.checkpoint,
+            )
+            executed = engine.run()
+        except (OSError, tomllib.TOMLDecodeError, ValueError, PauseError, StepError) as exc:
+            print(f"agent-handover: error: {exc}", file=sys.stderr)
+            return 1
         print("handover steps executed:", ", ".join(executed) or "(none)")
         return 0
 

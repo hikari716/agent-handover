@@ -17,6 +17,16 @@
   block on every re-install when a stray END marker precedes it.
 - Fix: `[backend].paths = "memory"` (a string) is accepted as one path.
 - 46 new unit tests (100 total); coverage 92% -> 98%.
+- Fix: `GitBackend.publish()` commits only its `paths`; files the user had
+  staged elsewhere are no longer swept into (and pushed with) the handover.
+- Fix: `GitBackend.publish()` pushes `HEAD` to `branch` instead of the local
+  `branch` ref, so the handover commit is pushed even when another branch is
+  checked out (it silently was not before, while returning True).
+- Fix: resuming a checkpoint whose steps are all done (crash right before
+  `complete()`) no longer re-runs every step; it just marks the run completed.
+- Fix: `agent-handover run` prints a one-line error and exits 1 on a missing or
+  invalid config, a missing note, a PAUSE file, or a failed step, instead of a
+  traceback.
 
 ## 0.5.1 — 2026-07-13
 
