@@ -1,0 +1,15 @@
+RESULT: DONE git注入RCEとパストラバーサル修正・テスト100→116・draft PR #16
+次の一手: Codex/Gemini が PR #16 を検品し、合格ならヒロがマージ判断
+判断: 実害2件(RCE・書込み逸脱)のみ修正、publish.ymlのSHA固定は未変更 / 理由: SHA確認が要り推測で直さない方針
+実測:
+- テスト 100 passed → 116 passed（新規 tests/test_security.py 16件、修正前14件failで再現確認）
+- カバレッジ 98% → 98%（374→380 stmts）
+- pip-audit: tomli 既知脆弱性なし / 秘密のハードコード grep 該当なし
+直した不具合:
+1. GitBackend: branch="--receive-pack=<cmd>" 等で git push がコマンド実行（handover.toml 経由で到達）→ remote/branch の "-" 始まりを ValueError、git add に "--"
+2. MemoryStore.write: date_str="../../x" で memory root 外へ書込み（Windowsはtagの"\"も）→ YYYY-MM-DD 必須、_safe_tag で "\" 置換
+3. ci.yml: permissions: contents: read
+変更点: src/agent_handover/backends.py, src/agent_handover/memory.py, tests/test_security.py, CHANGELOG.md, .github/workflows/ci.yml（ブランチ claude/agent-handover-security-7f8cfk）
+PR: https://github.com/hikari716/agent-handover/pull/16 （draft・未マージ）
+残り: publish.yml の gh-action-pypi-publish@release/v1 SHA固定 / autopush.sh の git add -A（設計上の秘密混入リスク、.gitignore依存）
+検品: 未（Codex|Gemini 待ち）
