@@ -28,6 +28,12 @@ class GitBackend:
     def __init__(self, repo_root: Path | str, paths: list[str] | None = None,
                  branch: str = "main", remote: str = "origin",
                  push: bool = True, timeout: int = 60):
+        # remote/branch are positional args of `git push`; a value starting
+        # with "-" would be parsed as an option (e.g. --receive-pack=<cmd>
+        # runs an arbitrary command), so refuse them up front.
+        for name, value in (("remote", remote), ("branch", branch)):
+            if not value or value.startswith("-"):
+                raise ValueError(f"invalid git {name}: {value!r}")
         self.repo_root = Path(repo_root)
         self.paths = paths or ["."]
         self.branch = branch
@@ -45,7 +51,7 @@ class GitBackend:
         if dry_run:
             return True
         try:
-            r = self._git("add", *self.paths)
+            r = self._git("add", "--", *self.paths)
             if r.returncode != 0:
                 return False
             # Nothing staged under our paths is a success, not a failure. Asking

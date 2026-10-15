@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Security: `GitBackend` rejects a `remote`/`branch` starting with `-`. Such a
+  value (e.g. from `[backend].branch` in a handover.toml) was parsed by
+  `git push` as an option, and `--receive-pack=<cmd>` ran an arbitrary
+  command. `git add` now passes `--` before the paths.
+- Security: `MemoryStore.write()` requires `date_str` to be `YYYY-MM-DD`
+  (raises `ValueError` otherwise) and `_safe_tag` also replaces `\`, so a
+  crafted date/tag can no longer write outside the memory root.
+- CI: workflow token limited to `contents: read`.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).

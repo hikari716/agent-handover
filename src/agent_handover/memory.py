@@ -16,10 +16,12 @@ from datetime import datetime
 from pathlib import Path
 
 HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
+_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def _safe_tag(tag: str) -> str:
-    return tag.replace("/", "-").replace(" ", "_")
+    # Both separators: "\\" is a path separator on Windows.
+    return tag.replace("/", "-").replace("\\", "-").replace(" ", "_")
 
 
 class MemoryStore:
@@ -32,6 +34,9 @@ class MemoryStore:
         if layer not in (1, 2, 3):
             raise ValueError(f"invalid layer: {layer}")
         date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+        # date_str becomes a directory and filename; "../x" would escape root.
+        if not _DATE_RE.fullmatch(date_str):
+            raise ValueError(f"invalid date_str (expected YYYY-MM-DD): {date_str!r}")
         ym = date_str[:7]
         safe_tag = _safe_tag(tag)
 
