@@ -24,18 +24,24 @@ Schema (all sections optional unless noted):
     branch = "main"
     remote = "origin"
     message = "handover: codex session"     # commit message (optional)
+    timeout = 60                            # seconds per git command (optional)
+
+Malformed values (wrong type, unknown backend) raise ConfigError — a
+ValueError — rather than being coerced: ``push = "false"`` is a string and
+would otherwise be truthy and push.
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
-try:  # Python 3.11+
+if sys.version_info >= (3, 11):
     import tomllib
-except ModuleNotFoundError:  # Python 3.10
+else:  # Python 3.10
     import tomli as tomllib
 
-from agent_handover.backends import GitBackend, NullBackend
+from agent_handover.backends import Backend, GitBackend, NullBackend, publish_or_raise
 from agent_handover.checkpoint import Checkpoint
 from agent_handover.engine import HandoverEngine, Step
 from agent_handover.memory import MemoryStore
@@ -43,10 +49,43 @@ from agent_handover.memory import MemoryStore
 DEFAULT_CHECKPOINT = ".agent-handover/checkpoint.json"
 
 
+class ConfigError(ValueError):
+    """The handover config is missing, unparsable, or has a malformed value."""
+
+
 def load_config(path: Path | str) -> dict[str, Any]:
-    """Parse a TOML handover config file into a dict."""
-    with Path(path).open("rb") as fh:
-        return tomllib.load(fh)
+    """Parse a TOML handover config file into a dict.
+
+    Raises ConfigError (naming the file) if it cannot be read or parsed.
+    """
+    try:
+        with Path(path).open("rb") as fh:
+            data: dict[str, Any] = tomllib.load(fh)
+            return data
+    except OSError as exc:
+        raise ConfigError(f"cannot read config {path}: {exc}") from exc
+    except tomllib.TOMLDecodeError as exc:
+        raise ConfigError(f"invalid TOML in {path}: {exc}") from exc
+
+
+def _table(config: dict[str, Any], name: str) -> dict[str, Any]:
+    value = config.get(name, {})
+    if not isinstance(value, dict):
+        raise ConfigError(f"[{name}] must be a table, got {type(value).__name__}")
+    return value
+
+
+def _opt(table: dict[str, Any], section: str, key: str, typ: type | tuple[type, ...],
+         default: Any) -> Any:
+    """Return ``table[key]`` (or ``default``) after checking its type."""
+    value = table.get(key, default)
+    if value is None:
+        return value
+    # bool is an int subclass; never accept True/False where a number is expected.
+    if not isinstance(value, typ) or (isinstance(value, bool) and typ is not bool):
+        names = typ.__name__ if isinstance(typ, type) else " or ".join(t.__name__ for t in typ)
+        raise ConfigError(f"[{section}].{key} must be {names}, got {value!r}")
+    return value
 
 
 def build_engine_from_config(
@@ -63,30 +102,35 @@ def build_engine_from_config(
     ``[note]`` section, ``push`` overrides ``[backend].push``, and ``checkpoint``
     overrides ``[handover].checkpoint``.
     """
-    handover = config.get("handover", {})
-    memory_dir = handover.get("memory_dir", "memory")
-    tag = handover.get("tag", "general")
-    cp_path = checkpoint or handover.get("checkpoint", DEFAULT_CHECKPOINT)
-    pause_file = handover.get("pause_file")
+    if not isinstance(config, dict):
+        raise ConfigError(f"config must be a dict, got {type(config).__name__}")
+    handover = _table(config, "handover")
+    memory_dir = _opt(handover, "handover", "memory_dir", str, "memory")
+    tag = _opt(handover, "handover", "tag", str, "general")
+    cp_path = checkpoint or _opt(handover, "handover", "checkpoint", str, DEFAULT_CHECKPOINT)
+    pause_file = _opt(handover, "handover", "pause_file", str, None)
 
-    note_cfg = config.get("note", {})
-    session_note = note if note is not None else note_cfg.get("session")
+    note_cfg = _table(config, "note")
+    session_note = (note if note is not None
+                    else _opt(note_cfg, "note", "session", str, None))
     if session_note is None:
-        raise ValueError(
+        raise ConfigError(
             "no session note: pass note=... (CLI --note) or set [note].session in the config"
         )
-    state = current_state if current_state is not None else note_cfg.get("current_state")
+    state = (current_state if current_state is not None
+             else _opt(note_cfg, "note", "current_state", str, None))
     if state is None:
         state = session_note
 
-    backend = _build_backend(config.get("backend", {}), memory_dir, push)
-    commit_msg = config.get("backend", {}).get("message", f"handover: {tag} session")
+    backend_cfg = _table(config, "backend")
+    backend = _build_backend(backend_cfg, memory_dir, push)
+    commit_msg = _opt(backend_cfg, "backend", "message", str, f"handover: {tag} session")
 
     store = MemoryStore(memory_dir)
     steps = [
         Step("session_note", lambda: store.write(1, session_note, tag=tag)),
         Step("current_state", lambda: store.write(2, state)),
-        Step("publish", lambda: _require(backend.publish(commit_msg))),
+        Step("publish", lambda: publish_or_raise(backend, commit_msg)),
     ]
     return HandoverEngine(
         steps=steps,
@@ -95,26 +139,28 @@ def build_engine_from_config(
     )
 
 
-def _build_backend(backend_cfg: dict[str, Any], memory_dir: str, push: bool | None):
-    btype = backend_cfg.get("type", "git")
+def _build_backend(backend_cfg: dict[str, Any], memory_dir: str,
+                   push: bool | None) -> Backend:
+    btype = _opt(backend_cfg, "backend", "type", str, "git")
     if btype == "null":
         return NullBackend()
     if btype == "git":
-        do_push = backend_cfg.get("push", True) if push is None else push
-        paths = backend_cfg.get("paths") or [str(memory_dir)]
+        cfg_push = _opt(backend_cfg, "backend", "push", bool, True)
+        do_push = cfg_push if push is None else push
+        paths = _opt(backend_cfg, "backend", "paths", (list, str), None) or [str(memory_dir)]
         if isinstance(paths, str):  # `paths = "memory"` must not become m, e, m, ...
             paths = [paths]
+        if not all(isinstance(p, str) for p in paths):
+            raise ConfigError(f"[backend].paths must be a list of strings, got {paths!r}")
+        timeout = _opt(backend_cfg, "backend", "timeout", (int, float), 60)
+        if timeout <= 0:
+            raise ConfigError(f"[backend].timeout must be > 0, got {timeout!r}")
         return GitBackend(
-            backend_cfg.get("repo_dir", "."),
+            _opt(backend_cfg, "backend", "repo_dir", str, "."),
             paths=paths,
-            branch=backend_cfg.get("branch", "main"),
-            remote=backend_cfg.get("remote", "origin"),
+            branch=_opt(backend_cfg, "backend", "branch", str, "main"),
+            remote=_opt(backend_cfg, "backend", "remote", str, "origin"),
             push=do_push,
+            timeout=timeout,
         )
-    raise ValueError(f"unknown backend type: {btype!r} (expected 'git' or 'null')")
-
-
-def _require(ok: bool) -> None:
-    """Turn a backend's boolean result into a checkpointable failure."""
-    if not ok:
-        raise RuntimeError("backend.publish failed")
+    raise ConfigError(f"unknown backend type: {btype!r} (expected 'git' or 'null')")

@@ -21,7 +21,7 @@ from agent_handover.checkpoint import Checkpoint
 @dataclass
 class Step:
     name: str
-    run: Callable[[], None]
+    run: Callable[[], object]  # return value is ignored; raise to fail the step
 
 
 class PauseError(RuntimeError):

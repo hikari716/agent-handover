@@ -5,6 +5,12 @@
 - status: human-readable checkpoint state.
 - run: execute a declarative handover from a TOML config (see
   ``agent_handover.config``).
+
+Expected failures (corrupt checkpoint, bad config, PAUSE file, a failed
+step) print one ``agent-handover: error: ...`` line to stderr instead of a
+traceback. Exit codes are unchanged: ``check`` still exits 1 ("resume
+needed" — a human must look) when the checkpoint is unreadable, and the
+other commands exit 1 on error.
 """
 from __future__ import annotations
 
@@ -12,7 +18,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from agent_handover.checkpoint import Checkpoint
+from agent_handover.checkpoint import RESUME_NEEDED, Checkpoint, CheckpointError
 
 DEFAULT_CHECKPOINT = Path(".agent-handover/checkpoint.json")
 
@@ -37,12 +43,28 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _error(msg: object) -> int:
+    print(f"agent-handover: error: {msg}", file=sys.stderr)
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "check":
-        return Checkpoint(args.checkpoint).resume_code()
+        try:
+            return Checkpoint(args.checkpoint).resume_code()
+        except CheckpointError as exc:
+            _error(exc)
+            return RESUME_NEEDED
+    try:
+        return _dispatch(args)
+    except CheckpointError as exc:
+        return _error(exc)
+
+
+def _dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "status":
         cp = Checkpoint(args.checkpoint)
@@ -58,17 +80,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "run":
         # Imported lazily so `check`/`status` don't require the TOML parser.
-        from agent_handover.config import build_engine_from_config, load_config
+        from agent_handover.config import ConfigError, build_engine_from_config, load_config
+        from agent_handover.engine import PauseError, StepError
 
-        config = load_config(args.config)
-        engine = build_engine_from_config(
-            config,
-            note=args.note,
-            current_state=args.current_state,
-            push=(False if args.no_push else None),
-            checkpoint=args.checkpoint,
-        )
-        executed = engine.run()
+        try:
+            config = load_config(args.config)
+            engine = build_engine_from_config(
+                config,
+                note=args.note,
+                current_state=args.current_state,
+                push=(False if args.no_push else None),
+                checkpoint=args.checkpoint,
+            )
+            executed = engine.run()
+        except (ConfigError, PauseError, StepError) as exc:
+            return _error(exc)
         print("handover steps executed:", ", ".join(executed) or "(none)")
         return 0
 

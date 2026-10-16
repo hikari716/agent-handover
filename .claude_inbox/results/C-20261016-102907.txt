@@ -1,0 +1,15 @@
+RESULT: DONE エラー処理・型・入力チェック整備、不具合4件修正、テスト100→163
+次の一手: Codex/Gemini が draft PR #17 を検品し、合格ならヒロ/Grok がマージ判断
+判断: 壊れた checkpoint でも check の終了コードは 1 のまま / 理由: 既存ガードの 0/1/2 契約を壊さず、人が見る方へ倒すため
+判断: unknown status は従来どおり "none" 扱い / 理由: 既存テストが固定している仕様のため
+実測: pytest 100件→163件パス（Py3.10/3.11/3.12/3.13 全部）、カバレッジ 98%→99%、mypy --strict 0件（元は通常モードで10件）
+直した不具合（main で再現してから修正）:
+ 1. 壊れた checkpoint で check/status が traceback（JSONDecodeError/TypeError）→ CheckpointError＋1行エラー、ファイルは上書きしない
+ 2. git 不在で GitBackend.publish が FileNotFoundError → False＋last_error に理由。ステップのエラーにも git の stderr を載せる
+ 3. config の push="false"（文字列）が真扱いで push してしまう → 型チェック（ConfigError）。[backend].timeout を追加
+ 4. MemoryStore.write(date_str="../../x") が memory root の外へ書き込む → YYYY-MM-DD 必須。bool の layer・\ を含む tag も対策
+PR: https://github.com/hikari716/agent-handover/pull/17 (draft)
+変更点: src/agent_handover/{backends,checkpoint,cli,config,engine,memory,__init__}.py, adapters/{codex,cline,opencode}.py, tests/test_error_handling.py(新規), tests/test_edge_cases.py, CHANGELOG.md / ブランチ claude/agent-handover-error-types-3ghjka
+秘密: 該当ファイルなし（ファイル名と内容をスキャン）
+検品: 未（Codex|Gemini 待ち）
+残り: なし（このファイルは前例どおりマージ前に PR から外してよい）

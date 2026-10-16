@@ -22,7 +22,7 @@ from pathlib import Path
 
 from agent_handover.adapters import _agents_md
 from agent_handover.adapters._agents_md import BEGIN_MARKER, DEFAULT_CHECKPOINT, END_MARKER
-from agent_handover.backends import GitBackend, NullBackend
+from agent_handover.backends import GitBackend, NullBackend, publish_or_raise
 from agent_handover.checkpoint import Checkpoint
 from agent_handover.engine import HandoverEngine, Step
 from agent_handover.memory import MemoryStore
@@ -82,16 +82,10 @@ def build_codex_handover_engine(
     steps = [
         Step("session_note", lambda: store.write(1, session_note, tag=tag)),
         Step("current_state", lambda: store.write(2, current_state)),
-        Step("publish", lambda: _require(backend.publish(f"handover: codex session ({tag})"))),
+        Step("publish", lambda: publish_or_raise(backend, f"handover: codex session ({tag})")),
     ]
     return HandoverEngine(
         steps=steps,
         checkpoint=Checkpoint(checkpoint),
         pause_file=pause_file,
     )
-
-
-def _require(ok: bool) -> None:
-    """Turn a backend's boolean result into a checkpointable failure."""
-    if not ok:
-        raise RuntimeError("backend.publish failed")
