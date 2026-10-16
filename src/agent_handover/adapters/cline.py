@@ -22,7 +22,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agent_handover.adapters import _agents_md
-from agent_handover.backends import GitBackend, NullBackend
+from agent_handover.backends import GitBackend, NullBackend, publish_or_raise
 from agent_handover.checkpoint import Checkpoint
 from agent_handover.engine import HandoverEngine, Step
 from agent_handover.memory import MemoryStore
@@ -107,16 +107,10 @@ def build_cline_handover_engine(
     steps = [
         Step("session_note", lambda: store.write(1, session_note, tag=tag)),
         Step("current_state", lambda: store.write(2, current_state)),
-        Step("publish", lambda: _require(backend.publish(f"handover: cline session ({tag})"))),
+        Step("publish", lambda: publish_or_raise(backend, f"handover: cline session ({tag})")),
     ]
     return HandoverEngine(
         steps=steps,
         checkpoint=Checkpoint(checkpoint),
         pause_file=pause_file,
     )
-
-
-def _require(ok: bool) -> None:
-    """Turn a backend's boolean result into a checkpointable failure."""
-    if not ok:
-        raise RuntimeError("backend.publish failed")

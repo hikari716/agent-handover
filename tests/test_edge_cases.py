@@ -13,7 +13,8 @@ from agent_handover.checkpoint import (
     Checkpoint,
 )
 from agent_handover.cli import main
-from agent_handover.config import _build_backend, _require, build_engine_from_config
+from agent_handover.backends import publish_or_raise
+from agent_handover.config import _build_backend, build_engine_from_config
 from agent_handover.engine import HandoverEngine, PauseError, Step, StepError
 from agent_handover.memory import MemoryStore
 
@@ -182,10 +183,17 @@ def test_config_missing_note_raises():
         build_engine_from_config({"backend": {"type": "null"}})
 
 
-def test_require_raises_on_false():
-    _require(True)
+def test_publish_or_raise_raises_on_false():
+    class _B:
+        def __init__(self, ok):
+            self.ok = ok
+
+        def publish(self, message, dry_run=False):
+            return self.ok
+
+    publish_or_raise(_B(True), "m")
     with pytest.raises(RuntimeError, match="publish failed"):
-        _require(False)
+        publish_or_raise(_B(False), "m")
 
 
 def test_config_publish_failure_keeps_step_pending(tmp_path):

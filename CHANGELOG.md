@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Errors: a corrupt/invalid checkpoint raises `CheckpointError` (a
+  `ValueError`, naming the file) instead of a raw `JSONDecodeError`/`KeyError`,
+  and is never overwritten. The CLI prints one `agent-handover: error: ...`
+  line instead of a traceback for checkpoint, config, PAUSE and step errors;
+  exit codes are unchanged (`check` still exits 1 on an unreadable checkpoint).
+- Errors: `GitBackend.publish()` returns False (instead of raising
+  `FileNotFoundError`) when git is missing, and records why in `last_error`
+  (git's stderr / timeout / OSError). `publish_or_raise()` puts that reason in
+  the step error (`PublishError`, a `RuntimeError`), shared by all adapters.
+- Input checks: config values are type-checked (`ConfigError`, a
+  `ValueError`): `[backend].push = "false"` used to be truthy and push.
+  New `[backend].timeout` (seconds per git command). `GitBackend` rejects a
+  non-positive timeout and accepts `paths="memory"` as one path.
+- Input checks: `MemoryStore.write()` requires `date_str` as `YYYY-MM-DD`
+  (`"../../x"` used to escape the memory root), rejects `True`/`False` as a
+  layer and non-str content, and treats `\` in tags as a separator.
+- Types: `Step.run` is `Callable[[], object]`; package passes `mypy --strict`.
+- 63 new unit tests (163 total); coverage 98% -> 99%.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
