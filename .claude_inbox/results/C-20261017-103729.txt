@@ -11,6 +11,6 @@ RESULT: DONE README「PAUSEで停止」と例スクリプトの食い違いを�
 - examples/{claude-code,codex-cli,cline,opencode}/end_of_session.py が pause_file 未指定 → $AH_PAUSE_FILE（既定 ~/.agent_handover/PAUSE、scripts/autopush.sh と同じ）を渡す
 - examples/run/handover.toml の pause_file がコメントアウト → 有効化
 変更点: 上記5ファイル＋tests/test_examples.py＋CHANGELOG.md / ブランチ claude/agent-handover-readme-sync-3em2g7
-PR: (下記 push 後に追記)
+PR: https://github.com/hikari716/agent-handover/pull/18 (draft)
 秘密: 発見なし
 残り: agent-handover run で --note 未指定・PAUSE時に traceback が出る（exit 1 にはなる）。仕様の範囲外として未修正
