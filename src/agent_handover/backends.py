@@ -55,7 +55,9 @@ class GitBackend:
             r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
             if r.returncode == 0:
                 return True
-            r = self._git("commit", "-m", message)
+            # Commit only our paths: anything else the human has staged stays
+            # staged instead of being swept into the handover commit.
+            r = self._git("commit", "-m", message, "--", *self.paths)
             if r.returncode != 0:
                 return False
             if self.push:

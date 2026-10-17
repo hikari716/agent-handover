@@ -116,3 +116,41 @@ def test_timeout_returns_false(repo, monkeypatch):
         raise subprocess.TimeoutExpired(cmd="git", timeout=1)
     monkeypatch.setattr(subprocess, "run", boom)
     assert GitBackend(repo, push=False).publish("m") is False
+
+
+def test_publish_does_not_commit_unrelated_staged_files(repo):
+    # regression: the handover commit swept in whatever the human had staged
+    # outside `paths`, although the "anything to commit?" check is scoped.
+    (repo / "README.md").write_text("base", encoding="utf-8")
+    git(repo, "add", "README.md")
+    git(repo, "commit", "-q", "-m", "base")
+    (repo / "wip.txt").write_text("human work in progress", encoding="utf-8")
+    git(repo, "add", "wip.txt")
+
+    b = GitBackend(repo, paths=["memory"], push=False)
+    assert b.publish("handover") is True
+    files = git(repo, "show", "--name-only", "--format=", "HEAD").split()
+    assert files == ["memory/note.md"]
+    # the human's staged change is left staged, untouched
+    assert git(repo, "diff", "--cached", "--name-only").split() == ["wip.txt"]
+
+
+def test_publish_with_default_paths_commits_everything(repo):
+    (repo / "other.txt").write_text("x", encoding="utf-8")
+    b = GitBackend(repo, push=False)  # paths=["."]
+    assert b.publish("all") is True
+    files = sorted(git(repo, "show", "--name-only", "--format=", "HEAD").split())
+    assert files == ["memory/note.md", "other.txt"]
+
+
+def test_commit_failure_returns_false(repo, monkeypatch):
+    b = GitBackend(repo, paths=["memory"], push=False)
+    real = b._git
+
+    def fake(*args, **kw):
+        if args[0] == "commit":
+            return subprocess.CompletedProcess(args, 1, "", "hook rejected")
+        return real(*args, **kw)
+
+    monkeypatch.setattr(b, "_git", fake)
+    assert b.publish("x") is False
