@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fix: resuming a checkpoint whose steps were all done (crash after the last
+  step, before `complete()`) no longer re-runs every step — it previously wrote
+  a duplicate note and made a duplicate handover commit.
+- Fix: `GitBackend.publish()` commits only `paths`; files the human had staged
+  elsewhere stay staged instead of being swept into the handover commit.
+- 19 new unit tests (119 total); branch coverage 97% -> 99%.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).

@@ -63,3 +63,54 @@ def test_pause_file_blocks_everything(tmp_path):
     with pytest.raises(PauseError):
         engine.run()
     assert log == []
+
+
+def test_resume_after_crash_before_complete_does_not_rerun_steps(tmp_path):
+    # regression: every step was marked done but the process died before
+    # complete(). The resume must not run every step (duplicate note/commit)
+    # again; it only has to close the run.
+    log = []
+    engine, cp = make_engine(tmp_path, log)
+    cp.start(["a", "b", "c"])
+    for name in ("a", "b", "c"):
+        cp.mark_done(name)
+    assert cp.load()["status"] == "in_progress"
+
+    assert engine.run(resume=True) == []
+    assert log == []
+    assert cp.resume_code() == RESUME_COMPLETED
+
+
+def test_resume_false_reruns_done_steps(tmp_path):
+    log = []
+    engine, cp = make_engine(tmp_path, log)
+    cp.start(["a", "b", "c"])
+    cp.mark_done("a")
+    assert engine.run(resume=False) == ["a", "b", "c"]
+    assert log == ["a", "b", "c"]
+
+
+def test_pause_between_steps_keeps_rest_pending(tmp_path):
+    pause = tmp_path / "PAUSE"
+    log = []
+
+    def a():
+        log.append("a")
+        pause.touch()  # human pulls the brake mid-run
+
+    cp = Checkpoint(tmp_path / "cp.json")
+    engine = HandoverEngine([Step("a", a), Step("b", lambda: log.append("b"))],
+                            cp, pause_file=pause)
+    with pytest.raises(PauseError):
+        engine.run()
+    assert log == ["a"]
+    assert cp.pending_steps() == ["b"]
+
+
+def test_step_error_keeps_cause(tmp_path):
+    engine, _ = make_engine(tmp_path, [], fail_on="a")
+    with pytest.raises(StepError) as e:
+        engine.run()
+    assert isinstance(e.value.cause, RuntimeError)
+    assert e.value.__cause__ is e.value.cause
+    assert "step 'a' failed: boom" in str(e.value)

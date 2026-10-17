@@ -55,11 +55,13 @@ class HandoverEngine:
         # Read pending steps *after* start(): start() registers steps unknown to
         # an interrupted checkpoint as pending, so they are not silently skipped.
         self.checkpoint.start([s.name for s in self.steps])
+        # An empty pending set means every step finished before the crash (the
+        # process died before complete()): close the run, don't redo them all.
         pending = set(self.checkpoint.pending_steps()) if resume else None
 
         executed: list[str] = []
         for step in self.steps:
-            if resume and pending is not None and pending and step.name not in pending:
+            if pending is not None and step.name not in pending:
                 continue  # already done in the interrupted run
             self._check_pause()
             try:

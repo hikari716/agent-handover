@@ -1,0 +1,17 @@
+RESULT: DONE テスト100→119件・分岐cov97→99%・不具合2件を再現テスト付きで修正（draft PR）
+次の一手: Codex/Gemini が draft PR を検品→合格なら Grok/ヒロがマージ判断
+判断: Python 3.10 の tomli fallback(config.py:35-36) と到達不能 fallthrough(cli.py:75,79) はテスト対象外 / 理由: 3.13環境で実行不能・挙動なし
+実測:
+- 前: pytest 100 passed / branch coverage 97% (pytest --cov=agent_handover --cov-branch)
+- 後: pytest 119 passed / branch coverage 99%（cli.py 93%, config.py 97%, 他は全て100%）
+- 修正前に新規テスト2件が FAILED で再現（test_resume_after_crash_before_complete_does_not_rerun_steps, test_publish_does_not_commit_unrelated_staged_files）→修正後 全件pass
+直した不具合:
+1. engine.run(resume=True): 全stepがdoneで complete() 前に落ちた checkpoint を再開すると、pending空=全step再実行（ノート・commit重複）。→ pending空なら何も実行せず complete のみ。
+2. GitBackend.publish(): 差分判定は paths 限定なのに commit は index 全体 → 人間が別途 staged した無関係ファイルが handover commit に混入。→ `git commit -m msg -- <paths>` で paths のみ commit。
+変更点（ブランチ claude/agent-handover-test-coverage-9cidt9）:
+- src/agent_handover/engine.py, src/agent_handover/backends.py, CHANGELOG.md
+- tests/test_engine.py(+4), tests/test_backends.py(+3), tests/test_failure_paths.py(新規12)
+PR: PR_URL_PLACEHOLDER
+秘密情報: 該当なし（読んでいない・見つけていない）
+残り: 破損JSONの checkpoint で `agent-handover check` が traceback(exit 1=resume扱い)になる点は挙動仕様の判断が要るため未修正（提案のみ）
+検品: 未（Codex|Gemini 待ち）
