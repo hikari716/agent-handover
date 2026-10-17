@@ -1,0 +1,16 @@
+RESULT: DONE README「PAUSEで停止」と例スクリプトの食い違いを修正＋テスト9件
+次の一手: Codex/Gemini が draft PR を検品 → ヒロがマージ判断
+判断: コード側（examples）を直す / 理由: README全体がPAUSEを「絶対の停止スイッチ」と明記、ライブラリ既定は変えず影響を例に限定
+検品: 未（Codex|Gemini 待ち）
+実測:
+- テスト 100 passed → 109 passed（新規 tests/test_examples.py 9件）、カバレッジ 98% → 98%（src不変）
+- 再現: 修正前 test_examples.py 5 failed（例スクリプト4本＋run用TOMLが ~/.agent_handover/PAUSE を無視して memory/ を書いた）
+- 実機確認: HOME 隔離で cline 例を実行 → PAUSEなし rc=0 / PAUSEあり PauseError・memory/ 未作成
+- README の Python スニペット・agent-handover check/status/run(--no-push)・AGENTS.md/.clinerules ブロック一致は実行して一致を確認
+直した不具合:
+- examples/{claude-code,codex-cli,cline,opencode}/end_of_session.py が pause_file 未指定 → $AH_PAUSE_FILE（既定 ~/.agent_handover/PAUSE、scripts/autopush.sh と同じ）を渡す
+- examples/run/handover.toml の pause_file がコメントアウト → 有効化
+変更点: 上記5ファイル＋tests/test_examples.py＋CHANGELOG.md / ブランチ claude/agent-handover-readme-sync-3em2g7
+PR: https://github.com/hikari716/agent-handover/pull/18 (draft)
+秘密: 発見なし
+残り: agent-handover run で --note 未指定・PAUSE時に traceback が出る（exit 1 にはなる）。仕様の範囲外として未修正

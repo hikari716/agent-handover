@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fix (docs vs. code): every example README promised the `PAUSE` file is
+  "honored as a kill-switch", but the four `end_of_session.py` scripts passed
+  no `pause_file` and `examples/run/handover.toml` had it commented out, so a
+  `~/.agent_handover/PAUSE` was ignored. The scripts now honor
+  `$AH_PAUSE_FILE` (default `~/.agent_handover/PAUSE`, same as
+  `scripts/autopush.sh`) and the starter TOML enables `pause_file`.
+  Guarded by `tests/test_examples.py`.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
