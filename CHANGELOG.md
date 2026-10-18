@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Security: `GitBackend` rejects a `branch`/`remote` that starts with `-`
+  (`[backend].branch = "--receive-pack=<cmd>"` ran `<cmd>` on publish) and
+  passes `paths` after `--` so a path like `-A` cannot stage the whole tree.
+- Security: `MemoryStore.write()` rejects a `date_str` that is not
+  `YYYY-MM-DD` and neutralizes `\` / NUL in tags, so neither can write
+  outside the memory root.
+- CI: workflow token limited to `contents: read`.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).

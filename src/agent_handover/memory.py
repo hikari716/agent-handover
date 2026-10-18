@@ -17,9 +17,14 @@ from pathlib import Path
 
 HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
 
+_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
 
 def _safe_tag(tag: str) -> str:
-    return tag.replace("/", "-").replace(" ", "_")
+    # Both separators are neutralized so a tag can never leave its layer dir
+    # (backslash is a separator on Windows); NUL would crash the open() call.
+    return (tag.replace("/", "-").replace("\\", "-").replace(" ", "_")
+            .replace("\x00", ""))
 
 
 class MemoryStore:
@@ -32,6 +37,10 @@ class MemoryStore:
         if layer not in (1, 2, 3):
             raise ValueError(f"invalid layer: {layer}")
         date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+        # date_str becomes part of the path; anything but YYYY-MM-DD could
+        # traverse out of the memory root ("../../x").
+        if not _DATE_RE.fullmatch(date_str):
+            raise ValueError(f"invalid date_str: {date_str!r} (expected YYYY-MM-DD)")
         ym = date_str[:7]
         safe_tag = _safe_tag(tag)
 

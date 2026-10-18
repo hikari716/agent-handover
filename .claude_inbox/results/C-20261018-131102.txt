@@ -1,0 +1,19 @@
+RESULT: DONE git注入で任意コマンド実行+パストラバーサルを再現→修正 PR#21
+次の一手: Codex/Gemini が PR #21 を検品 → ヒロがマージ判断
+判断: branch/remote の "-" 始まりは拒否で塞ぐ / 理由: git -- 区切りが push の位置引数に使えず、最小で確実
+判断: autopush.sh の AH_REMOTE/AH_BRANCH は据え置き / 理由: 環境変数=信頼境界内
+実測:
+- テスト 100 passed → 112 passed（新規 tests/test_security.py 12件、修正前 12 failed を確認）
+- カバレッジ 98% → 98%（380 stmts, miss 8）
+- 再現: [backend].branch="--receive-pack=touch PWNED; git-receive-pack" で publish → PWNED 生成を確認（修正後は ValueError）
+- 再現: MemoryStore.write(date_str="../../../escape/2026-10-18") が root 外パス生成（修正後 ValueError）
+- pip-audit: 既知脆弱性 0 / subprocess は全てリスト渡し(shell=False) / リポジトリ内に秘密値の検出なし
+直した不具合:
+1. GitBackend: branch/remote の git オプション注入（任意コマンド実行）・git add に "--" 追加（paths=-A が全ツリーstage）
+2. MemoryStore: date_str を YYYY-MM-DD に限定、tag の \ と NUL を無害化（Windows でのトラバーサル）
+3. .github/workflows/ci.yml: permissions: contents: read
+変更点: src/agent_handover/backends.py, src/agent_handover/memory.py, tests/test_security.py, CHANGELOG.md, .github/workflows/ci.yml
+ブランチ: claude/agent-handover-security-4i5pcj
+PR: https://github.com/hikari716/agent-handover/pull/21 (draft)
+残り: Python 3.10/3.11 実機テストは CI 待ち（ローカルは 3.13）
+検品: 未（Codex|Gemini 待ち）
