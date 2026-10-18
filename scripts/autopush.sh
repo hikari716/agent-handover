@@ -28,12 +28,18 @@ if [[ -e "$PAUSE_FILE" ]]; then
   exit 0
 fi
 
-if [[ -z "$(git status --porcelain)" ]]; then
-  echo "nothing to commit — working tree clean."
-  exit 0
+if [[ -n "$(git status --porcelain)" ]]; then
+  git add -A
+  git commit -m "$MSG"
+else
+  # A clean tree can still hold a commit an earlier tick failed to push.
+  git fetch -q "$REMOTE" "$BRANCH" 2>/dev/null || true
+  if git rev-parse -q --verify "refs/remotes/$REMOTE/$BRANCH" >/dev/null \
+     && [[ "$(git rev-list --count "$REMOTE/$BRANCH..HEAD")" == 0 ]]; then
+    echo "nothing to push — working tree clean and $REMOTE/$BRANCH up to date."
+    exit 0
+  fi
 fi
 
-git add -A
-git commit -m "$MSG"
 git push "$REMOTE" "$BRANCH"
-echo "pushed to $REMOTE/$BRANCH: $MSG"
+echo "pushed to $REMOTE/$BRANCH: $(git log -1 --format=%s)"

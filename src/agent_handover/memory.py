@@ -44,10 +44,12 @@ class MemoryStore:
 
         if not dry_run:
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(
-                HEADER.format(layer=layer, date=date_str) + content,
-                encoding="utf-8",
-            )
+            text = HEADER.format(layer=layer, date=date_str) + content
+            if layer == 1 and target.exists():
+                # Layer 1 is append-only: a second session on the same day with
+                # the same tag must not overwrite the first one's note.
+                text = target.read_text(encoding="utf-8").rstrip("\n") + "\n\n" + text
+            target.write_text(text, encoding="utf-8")
         return target
 
     # -- read (fallback path when no remote layer is available) ---------
