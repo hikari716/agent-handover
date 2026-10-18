@@ -8,6 +8,6 @@ RESULT: DONE 精読で実不具合4件を再現→修正、テスト100→106全
  3. memory.py MemoryStore.write: Layer1 は README で「append」なのに同日同tagの2回目で前セッションのノートを上書き消失。追記に変更
  4. scripts/autopush.sh: push失敗後は作業ツリーがcleanで毎回「nothing to commit」で終了し永遠にpushされない。remoteより先行していればpush
 変更点: src/agent_handover/backends.py, src/agent_handover/memory.py, scripts/autopush.sh, tests/test_bug_hunt.py, CHANGELOG.md / ブランチ claude/agent-handover-bug-hunt-fzof7q
-PR: (下行に記載)
+PR: https://github.com/hikari716/agent-handover/pull/20 (draft)
 残り: 未修正の気付き — Checkpoint.load が壊れたJSONで例外（check の終了コードが偶然1=resume扱い）、cli run の StepError/PauseError がトレースバック表示。秘密情報の検出なし
 検品: 未（Codex|Gemini 待ち）
