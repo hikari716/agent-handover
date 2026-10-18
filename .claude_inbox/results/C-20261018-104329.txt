@@ -1,0 +1,13 @@
+RESULT: DONE 精読で実不具合4件を再現→修正、テスト100→106全通過・draft PR作成
+次の一手: Codex/Gemini が draft PR を検品し、ヒロ/Grok がマージ可否を判断する
+判断: 「何も変更なしでもpushする」挙動変更を採用 / 理由: push失敗後の再開で未pushのまま完了扱いになる方がデータ消失として重い
+実測: pytest 前 100 passed / 後 106 passed（新規 tests/test_bug_hunt.py 6件、うち4件は修正前に FAILED を確認）。カバレッジ 98%（374→376 stmts, miss 8 不変）
+直した不具合:
+ 1. backends.py GitBackend.publish: `git commit -m` が index 全体を commit → 人が別にstageしたファイルがhandover commitに混入しpushされる。`-- paths` で限定
+ 2. backends.py GitBackend.publish: commit成功・push失敗→再開時 index が空で True を返し push されないままチェックポイント完了。変更なしでも push=True なら push
+ 3. memory.py MemoryStore.write: Layer1 は README で「append」なのに同日同tagの2回目で前セッションのノートを上書き消失。追記に変更
+ 4. scripts/autopush.sh: push失敗後は作業ツリーがcleanで毎回「nothing to commit」で終了し永遠にpushされない。remoteより先行していればpush
+変更点: src/agent_handover/backends.py, src/agent_handover/memory.py, scripts/autopush.sh, tests/test_bug_hunt.py, CHANGELOG.md / ブランチ claude/agent-handover-bug-hunt-fzof7q
+PR: (下行に記載)
+残り: 未修正の気付き — Checkpoint.load が壊れたJSONで例外（check の終了コードが偶然1=resume扱い）、cli run の StepError/PauseError がトレースバック表示。秘密情報の検出なし
+検品: 未（Codex|Gemini 待ち）

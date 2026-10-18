@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Fix: `GitBackend.publish()` commits only its own `paths`; files staged
+  elsewhere are no longer swept into (and pushed with) the handover commit.
+- Fix: `GitBackend.publish()` pushes even when nothing new is staged, so a run
+  resumed after a failed push actually pushes the earlier handover commit
+  (it previously returned success and completed the checkpoint unpushed).
+- Fix: Layer-1 notes are appended, as documented; a second session on the same
+  day with the same tag no longer overwrites the first session's note.
+- Fix: `scripts/autopush.sh` pushes a commit left behind by an earlier failed
+  push instead of exiting at "working tree clean".
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
