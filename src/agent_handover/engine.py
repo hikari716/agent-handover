@@ -38,6 +38,7 @@ class StepError(RuntimeError):
 class HandoverEngine:
     def __init__(self, steps: list[Step], checkpoint: Checkpoint,
                  pause_file: Path | str | None = None):
+        _validate_steps(steps)
         self.steps = steps
         self.checkpoint = checkpoint
         # expanduser so a configured "~/.agent_handover/PAUSE" kill-switch is
@@ -71,3 +72,23 @@ class HandoverEngine:
 
         self.checkpoint.complete()
         return executed
+
+
+def _validate_steps(steps: list[Step]) -> None:
+    """Fail at construction, not halfway through a handover.
+
+    Names are checkpoint keys, so they must be unique: with two steps named
+    "publish", the first one's "done" would hide the second one's failure and
+    a resume would skip it and report the run completed.
+    """
+    seen: set[str] = set()
+    for step in steps:
+        if not isinstance(step, Step):
+            raise TypeError(f"steps must be Step objects, got {type(step).__name__}")
+        if not isinstance(step.name, str) or not step.name:
+            raise TypeError(f"step name must be a non-empty str, got {step.name!r}")
+        if not callable(step.run):
+            raise TypeError(f"step '{step.name}': run is not callable")
+        if step.name in seen:
+            raise ValueError(f"duplicate step name: '{step.name}'")
+        seen.add(step.name)

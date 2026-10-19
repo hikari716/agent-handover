@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_handover._fsutil import atomic_write_text
+
 BEGIN_MARKER = "<!-- agent-handover:begin -->"
 END_MARKER = "<!-- agent-handover:end -->"
 
@@ -75,5 +77,5 @@ def install(path: Path | str, block: str) -> bool:
 
     if updated == existing:
         return False
-    path.write_text(updated, encoding="utf-8")
+    atomic_write_text(path, updated)  # never leave the user's AGENTS.md half-written
     return True

@@ -1,0 +1,18 @@
+RESULT: DONE 不具合3件をテストで再現→修正、テスト100→118件、draft PR #22
+Grok: 不要 コードのみの変更・お金/鍵/外部送信なし。マージ判断は検品後
+判断: #17と同じテーマなので、重ならない穴だけ直した
+次の一手: Gemini(agy)が PR #22 を検品→合格なら Grok がマージ判断（main反映前に Codex 最終1回）
+詳細: 6行目以降
+判断: 重複ステップ名はエラー(ValueError)にした / 理由: 黙って通すと失敗したステップが resume で飛ばされ、完了扱いになるため
+判断: 一時ファイル→rename の書き込みでも元のファイル権限を引き継ぐ / 理由: mkstemp のままだと AGENTS.md が 0600 に変わってしまうため
+実測: 前回セッションは何も push していなかった（作業ブランチ = main と同じだった）。今回は最初から実施
+実測: pytest 100→118 件パス（py3.11/3.12/3.13）。カバレッジ 98%→98%。mypy は前後とも10件で、どれも元からある（#17 で解消済み）。今回の変更で増えたものなし
+直した不具合（どれも main で失敗するテストを先に書いてから修正）:
+ 1. 同じ名前のステップが2つあると、2つ目の失敗が checkpoint 上で見えなくなる → 組み立て時に拒否。型と callable のチェックも追加
+ 2. checkpoint の保存に失敗すると cp.tmp が残る。パスが *.tmp だと唯一のコピーが空になる。AGENTS.md/.clinerules は書き込みの途中で失敗すると中身が壊れうる → 共通の atomic_write（一意な一時ファイル＋fsync＋rename、失敗したら片付け、権限は維持）
+ 3. read_latest の走査中にノートが消されると FileNotFoundError → そのノートを飛ばして続ける
+PR: https://github.com/hikari716/agent-handover/pull/22 (draft)
+変更点: src/agent_handover/_fsutil.py(新規), checkpoint.py, engine.py, memory.py, adapters/_agents_md.py, adapters/cline.py, tests/test_failure_modes.py(新規), CHANGELOG.md / ブランチ claude/agent-handover-error-handling-v8cf9s
+秘密: 読んでいない・該当なし
+検品: 未（Gemini＋Grok 待ち・本番前は Codex 最終1回）
+残り: #17 と checkpoint.py・engine.py で小さな衝突が出るかもしれない（先にマージした方に後の方を合わせる）。この結果ファイルは、前例どおりマージ前に PR から外してよい

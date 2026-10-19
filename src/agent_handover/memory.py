@@ -14,12 +14,25 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
 
 
 def _safe_tag(tag: str) -> str:
     return tag.replace("/", "-").replace(" ", "_")
+
+
+def _with_mtime(paths: Iterable[Path]) -> list[tuple[float, Path]]:
+    # A note removed between listing and stat() (e.g. by a concurrent
+    # compaction) is skipped instead of failing the whole read.
+    out = []
+    for p in paths:
+        try:
+            out.append((p.stat().st_mtime, p))
+        except FileNotFoundError:
+            continue
+    return out
 
 
 class MemoryStore:
@@ -59,7 +72,7 @@ class MemoryStore:
         sub = self.root / f"layer{layer}"
         if not sub.exists():
             return ""
-        files = sorted(sub.rglob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+        files = [p for _, p in sorted(_with_mtime(sub.rglob("*.md")), reverse=True)]
         if tag:
             # Match the exact filename shape write() produces, so tag "codex"
             # does not pick up "codex-cli" notes and "my tag" finds "my_tag".
