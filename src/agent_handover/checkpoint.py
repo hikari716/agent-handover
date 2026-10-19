@@ -15,6 +15,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agent_handover._fsutil import atomic_write
+
 RESUME_NONE = 0
 RESUME_NEEDED = 1
 RESUME_COMPLETED = 2
@@ -33,10 +35,7 @@ class Checkpoint:
 
     def _save(self, data: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".tmp")
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        tmp.replace(self.path)  # atomic on POSIX
+        atomic_write(self.path, lambda f: json.dump(data, f, ensure_ascii=False, indent=2))
 
     # -- lifecycle -----------------------------------------------------
     def start(self, step_names: list[str]) -> None:

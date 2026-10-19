@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agent_handover._fsutil import atomic_write_text
 from agent_handover.adapters import _agents_md
 from agent_handover.backends import GitBackend, NullBackend
 from agent_handover.checkpoint import Checkpoint
@@ -77,7 +78,7 @@ def install_clinerules(
     if updated == existing:
         return False
     rules_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text(updated, encoding="utf-8")
+    atomic_write_text(path, updated)
     return True
 
 

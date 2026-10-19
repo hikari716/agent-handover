@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Fix: `HandoverEngine` rejects duplicate step names (`ValueError`) and
+  non-`Step` / unnamed / non-callable steps (`TypeError`) at construction. With
+  duplicate names the first step's "done" hid the second's failure, so a resume
+  skipped it and reported the run completed.
+- Fix: checkpoint saves and the AGENTS.md / `.clinerules` installers write
+  through a unique, fsynced temp file and rename. A failed write no longer
+  leaves a stray `*.tmp`, truncates a checkpoint named `*.tmp`, or leaves a
+  half-written AGENTS.md; file permissions are kept.
+- Fix: `MemoryStore.read_latest()` skips a note deleted while it scans instead
+  of raising `FileNotFoundError`.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
