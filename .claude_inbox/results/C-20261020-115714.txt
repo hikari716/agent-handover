@@ -1,0 +1,24 @@
+RESULT: DONE テスト100→124件・カバレッジ97→99%・不具合2件修正（draft PR #24）
+Grok: 要る 挙動変更2件（git commit範囲・Layer1追記）の採否とマージ判断
+判断: 不具合2件を再現テスト付きで修正。checkpoint破損時の挙動は未変更（仕様判断が要る）
+次の一手: Gemini(agy)がPR #24を検品→Grok OK→Codexがmain反映前の最終差分を1回確認
+詳細: 6行目以降
+判断と理由:
+- 判断: Layer1 は同じ日・同じタグなら上書きせず追記する / 理由: READMEに「append, dated」とあり、上書きだと同じ日の前のノートが消える
+- 判断: git commit を publish の paths に限定する / 理由: 人がステージしていた作業がハンドオーバーのコミットに混ざって push されていた
+実測（pytest + pytest-cov、branchカバレッジ、Python 3.13）:
+- 修正前: 100 passed / TOTAL 97%
+- 修正後: 124 passed / TOTAL 99%（残り: cli.py:75 は到達しない return、cli.py:79 は __main__、config.py:35-36 は py3.10 用の tomli import）
+- PR #24 の CI: test (3.10/3.11/3.12) すべて success
+- 再現の確認: src を戻すと再現テスト3件が FAILED、修正を入れると全124件 passed
+直した不具合:
+1. GitBackend.publish: paths 以外のステージ済みファイルもコミット・push していた → `git commit -m msg -- <paths>` に変更
+2. MemoryStore.write(1): 同じ日・同じタグの Layer1 ノートを上書きで消していた → 既存ファイルに追記（Layer2/3 は従来どおり上書き）
+変更点（ブランチ claude/agent-handover-test-coverage-j3rj9b）:
+- src/agent_handover/backends.py, src/agent_handover/memory.py, CHANGELOG.md
+- tests/test_regressions_c1020.py（新規24件）
+- PR: https://github.com/hikari716/agent-handover/pull/24 （draft・未マージ）
+秘密: 見つかった秘密情報なし（git ls-files に .env・鍵・トークン類のファイルなし）
+残り:
+- checkpoint JSON が壊れていると check が traceback を出して exit 1（=「再開が必要」と読める）。直すかどうかは仕様判断が要るので未対応
+検品: 未（Gemini＋Grok 待ち・本番前は Codex 最終1回）

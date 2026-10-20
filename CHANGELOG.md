@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Fix: `GitBackend.publish()` commits only its own `paths` (`git commit -- <paths>`);
+  before, any file the human had staged elsewhere in the repo was swept into
+  the handover commit (and pushed).
+- Fix: `MemoryStore.write(1, ...)` appends to an existing same-day, same-tag
+  Layer-1 note instead of overwriting it, matching the documented "append,
+  dated" behavior (a second session on the same day erased the first note).
+  Layers 2 and 3 still overwrite.
+- 24 new unit tests (124 total); branch coverage 97% -> 99%.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
