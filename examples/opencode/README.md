@@ -33,7 +33,7 @@ handover before doing new work.
 
 ```bash
 python examples/opencode/end_of_session.py "what happened this session"
-# local only (no git push):
+# local only (files only: no git commit, no push):
 AH_PUSH=0 python examples/opencode/end_of_session.py "wip: parser refactor"
 ```
 

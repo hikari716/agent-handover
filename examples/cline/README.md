@@ -31,7 +31,7 @@ doing new work. The `00-` prefix keeps it first in Cline's rule order.
 
 ```bash
 python examples/cline/end_of_session.py "what happened this task"
-# local only (no git push):
+# local only (files only: no git commit, no push):
 AH_PUSH=0 python examples/cline/end_of_session.py "wip: parser refactor"
 ```
 

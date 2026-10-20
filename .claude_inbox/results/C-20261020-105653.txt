@@ -1,0 +1,25 @@
+RESULT: DONE README実行照合: Layer1上書き不具合を修正＋文書4点を実装に合わせた
+Grok: 不要 挙動変更は同日同タグのLayer1追記のみ・お金/鍵/外部送信なし
+判断: Layer1は文書(append)が正→コード修正、他は実装が正→文書修正
+次の一手: Gemini(agy)がdraft PRを検品→Grok最終OK→main前にCodex差分1回
+詳細: 6行目以降
+判断: <Layer1 の上書きはコードを直す> / 理由: README・memory.py docstring とも「append」、上書きは同日2回目のセッションメモを消すデータ損失
+判断: <Layer3/AH_PUSH=0/--no-push/status は文書を直す> / 理由: アダプタ docstring と実装が一致しており意図的な仕様
+実測:
+- テスト: 100 passed → 101 passed（pytest -q）、カバレッジ 98% → 98%（378 stmts / 8 miss）
+- 再現: 新テスト test_layer1_appends_same_day_sessions が修正前 FAILED → 修正後 PASSED
+- 実行照合（一時 git repo + bare remote）: check=0→各例 AH_PUSH=0 4本 rc=0、codex 例 push rc=0（remote にコミット到達）、run rc=0、run --no-push rc=0（ローカルcommitのみ）、status/check=2 正常
+- examples の AGENTS.md / 00-agent-handover.md は install 生成ブロックと完全一致（True×3）
+直した不具合:
+- MemoryStore.write(1, ...) が同日同タグの既存ノートを上書き → 追記に修正（src/agent_handover/memory.py）
+直した文書:
+- README: Layer1 表記、Layer3 は自動 compaction なし（呼び出し側が write(3)）、agent-handover status 追記、--no-push はローカル commit、AH_PUSH=0 は commit も push もしない
+- examples/{claude-code,codex-cli,cline,opencode}/README.md: AH_PUSH=0 の説明
+- CONTRIBUTING.md: tomli backport の例外を明記 / CHANGELOG.md Unreleased 追記
+変更ブランチ: claude/agent-handover-readme-sync-m054m0
+PR: https://github.com/hikari716/agent-handover/pull/23 (draft)
+秘密: 見つからず（読んでいない）
+残り:
+- `agent-handover run` で --note 無し・PAUSE 時は Python traceback（README の主張とは矛盾しないので未変更、UX改善候補）
+- PyPI 公開有無（pip install agent-handover）は外部確認のため未検証
+検品: 未（Gemini＋Grok 待ち・本番前は Codex 最終1回）

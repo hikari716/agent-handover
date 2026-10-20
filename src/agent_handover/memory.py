@@ -1,8 +1,8 @@
 """Three-layer persistent memory store, written as plain Markdown.
 
-Layer 1  session notes      — what happened in one session (append, dated)
+Layer 1  session notes      — what happened in a session (dated; same tag + day appends)
 Layer 2  current state      — single always-overwritten snapshot ("where are we now")
-Layer 3  consolidated       — monthly compaction of old Layer-1 notes
+Layer 3  consolidated       — monthly archive of old Layer-1 notes (written by the caller)
 
 Everything is plain files under one root, so the store is git-friendly,
 diff-able, and readable by humans and by any agent that can read a file.
@@ -44,10 +44,14 @@ class MemoryStore:
 
         if not dry_run:
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(
-                HEADER.format(layer=layer, date=date_str) + content,
-                encoding="utf-8",
-            )
+            entry = HEADER.format(layer=layer, date=date_str) + content
+            # Layer 1 appends: a second same-tag session on the same day must
+            # not erase the first one's note. Layers 2/3 are overwritten.
+            if layer == 1 and target.exists():
+                with target.open("a", encoding="utf-8") as fh:
+                    fh.write("\n\n" + entry)
+            else:
+                target.write_text(entry, encoding="utf-8")
         return target
 
     # -- read (fallback path when no remote layer is available) ---------
