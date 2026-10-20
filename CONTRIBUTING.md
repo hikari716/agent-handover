@@ -13,4 +13,4 @@ pytest -q
 
 - Plain files first: nothing in core may require a network or a database.
 - Every behavior change needs a test.
-- Keep the core dependency-free (stdlib only).
+- Keep the core dependency-free (stdlib only; the `tomli` backport on Python 3.10 is the one exception).

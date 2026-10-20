@@ -22,7 +22,7 @@ workspace is clean.
 
 ```bash
 python examples/claude-code/end_of_session.py "what happened this task"
-# Local only (no git push):
+# Local only (files only: no git commit, no push):
 AH_PUSH=0 python examples/claude-code/end_of_session.py "wip: parser refactor"
 ```
 

@@ -41,9 +41,9 @@ by humans and any agent that can read a file):
 
 | Layer | File pattern | Semantics |
 |---|---|---|
-| 1 | `layer1/YYYY-MM/<tag>-<date>.md` | session notes (append, dated) |
+| 1 | `layer1/YYYY-MM/<tag>-<date>.md` | session notes (dated; same tag + day appends) |
 | 2 | `layer2/current-state.md` | "where are we now" (always overwritten) |
-| 3 | `layer3/YYYY-MM-<tag>-archive.md` | monthly compaction of old notes |
+| 3 | `layer3/YYYY-MM-<tag>-archive.md` | monthly archive you write with `store.write(3, ...)` (no automatic compaction yet) |
 
 **Three rules learned in production:**
 
@@ -86,6 +86,7 @@ In your agent's bootstrap (CLAUDE.md / AGENTS.md):
 
 ```bash
 agent-handover check   # exit 1 → finish the interrupted handover first
+agent-handover status  # human-readable: which steps are done / pending
 ```
 
 ## Declarative handover (`agent-handover run`)
@@ -100,7 +101,7 @@ agent-handover run --config .agent-handover/handover.toml --note "wip" --no-push
 ```
 
 CLI flags (`--note`, `--current-state`, `--no-push`, `--checkpoint`) override the
-file, so one config serves every session. See
+file (`--no-push` still commits locally with the git backend; only the push is skipped), so one config serves every session. See
 [`examples/run/`](./examples/run/) for a starter `handover.toml`.
 
 ## Use with Codex CLI
@@ -133,6 +134,9 @@ snippet there and run the end-of-session handover script after each task:
 agent-handover check --checkpoint .agent-handover/checkpoint.json
 AH_PUSH=0 python examples/claude-code/end_of_session.py "wip: parser refactor"
 ```
+
+`AH_PUSH=0` (or `push=False` in the `build_*_handover_engine` helpers) is
+local-files-only: the memory files are written but nothing is committed or pushed.
 
 See [`examples/claude-code/`](./examples/claude-code/) for the copyable
 `CLAUDE.md` block and runnable script.

@@ -16,7 +16,12 @@
   stray BEGIN marker on re-install, and no longer append another managed
   block on every re-install when a stray END marker precedes it.
 - Fix: `[backend].paths = "memory"` (a string) is accepted as one path.
-- 46 new unit tests (100 total); coverage 92% -> 98%.
+- Fix: `MemoryStore.write(1, ...)` appends to an existing same-tag, same-day
+  Layer-1 note instead of overwriting it, matching the documented "append"
+  semantics (a second session on the same day used to erase the first note).
+- Docs: README/examples now match the implementation (Layer 3 is written by the
+  caller, `agent-handover status`, `AH_PUSH=0` = no commit, `--no-push` = local commit).
+- 47 new unit tests (101 total); coverage 92% -> 98%.
 
 ## 0.5.1 — 2026-07-13
 
