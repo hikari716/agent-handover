@@ -17,7 +17,7 @@ Grok: 不要 挙動変更は同日同タグのLayer1追記のみ・お金/鍵/�
 - examples/{claude-code,codex-cli,cline,opencode}/README.md: AH_PUSH=0 の説明
 - CONTRIBUTING.md: tomli backport の例外を明記 / CHANGELOG.md Unreleased 追記
 変更ブランチ: claude/agent-handover-readme-sync-m054m0
-PR: （下に追記）
+PR: https://github.com/hikari716/agent-handover/pull/23 (draft)
 秘密: 見つからず（読んでいない）
 残り:
 - `agent-handover run` で --note 無し・PAUSE 時は Python traceback（README の主張とは矛盾しないので未変更、UX改善候補）
