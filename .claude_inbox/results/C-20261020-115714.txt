@@ -9,6 +9,7 @@ Grok: 要る 挙動変更2件（git commit範囲・Layer1追記）の採否と�
 実測（pytest + pytest-cov、branchカバレッジ、Python 3.13）:
 - 修正前: 100 passed / TOTAL 97%
 - 修正後: 124 passed / TOTAL 99%（残り: cli.py:75 は到達しない return、cli.py:79 は __main__、config.py:35-36 は py3.10 用の tomli import）
+- PR #24 の CI: test (3.10/3.11/3.12) すべて success
 - 再現の確認: src を戻すと再現テスト3件が FAILED、修正を入れると全124件 passed
 直した不具合:
 1. GitBackend.publish: paths 以外のステージ済みファイルもコミット・push していた → `git commit -m msg -- <paths>` に変更
@@ -20,5 +21,4 @@ Grok: 要る 挙動変更2件（git commit範囲・Layer1追記）の採否と�
 秘密: 見つかった秘密情報なし（git ls-files に .env・鍵・トークン類のファイルなし）
 残り:
 - checkpoint JSON が壊れていると check が traceback を出して exit 1（=「再開が必要」と読める）。直すかどうかは仕様判断が要るので未対応
-- CI 対象の Python 3.10〜3.12 では実測していない（ローカルは 3.13 だけ）。PR の CI で確認する
 検品: 未（Gemini＋Grok 待ち・本番前は Codex 最終1回）
