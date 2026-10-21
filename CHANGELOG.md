@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Fix: `GitBackend.publish()` commits only its own `paths`; changes the user
+  had already staged elsewhere are no longer swept into (and pushed with) the
+  handover commit.
+- Fix: `HandoverEngine.run()` no longer re-runs every step (incl. publish)
+  when an interrupted checkpoint already has all steps done but was never
+  marked completed.
+- Fix: `agent-handover run` reports a missing/unreadable config, missing
+  note, PAUSE file or failed step as one line on stderr with exit 1 instead of
+  a traceback.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).

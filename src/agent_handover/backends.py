@@ -55,7 +55,9 @@ class GitBackend:
             r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
             if r.returncode == 0:
                 return True
-            r = self._git("commit", "-m", message)
+            # Limit the commit to our paths so unrelated changes the user had
+            # already staged are neither committed nor pushed with the handover.
+            r = self._git("commit", "-m", message, "--", *self.paths)
             if r.returncode != 0:
                 return False
             if self.push:
