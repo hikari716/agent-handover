@@ -1,6 +1,6 @@
 RESULT: DONE git注入(任意コマンド実行)とmemoryパス逸脱を修正・テスト110件緑・draft PR#26
 Grok: 要る 実害2件の修正とmain反映の最終OK
-判断: 判断: -始まりのremote/branchは拒否＋--区切り併用 / 理由: 正当な名前に影響なく注入を根絶
+判断: -始まりのremote/branchは拒否＋--区切り併用 / 理由: 正当な名前に影響なく注入を根絶
 次の一手: Gemini(agy)がPR#26を検品→Grok OK→Codexが本番前の最終差分1回
 詳細: 6行目以降
 [実測]
