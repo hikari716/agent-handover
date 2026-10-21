@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Security: `GitBackend` rejects a `remote`/`branch` starting with `-` and
+  passes `--` before paths and push arguments. Previously a `handover.toml`
+  with `branch = "--receive-pack=<cmd>"` ran `<cmd>` on publish, and
+  `paths = ["--all"]` staged every file in the repo.
+- Security: `MemoryStore.write()` only accepts `date_str` as `YYYY-MM-DD`
+  (`"../../x"` wrote outside the memory root) and turns `\` in tags into `-`
+  so a tag cannot escape the layer directory on Windows.
+- CI: workflow token is read-only (`permissions: contents: read`).
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).

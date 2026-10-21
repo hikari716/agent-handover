@@ -1,0 +1,17 @@
+RESULT: DONE git注入(任意コマンド実行)とmemoryパス逸脱を修正・テスト110件緑・draft PR#26
+Grok: 要る 実害2件の修正とmain反映の最終OK
+判断: -始まりのremote/branchは拒否＋--区切り併用 / 理由: 正当な名前に影響なく注入を根絶
+次の一手: Gemini(agy)がPR#26を検品→Grok OK→Codexが本番前の最終差分1回
+詳細: 6行目以降
+[実測]
+- テスト: 前 100 passed / 後 110 passed（tests/test_security.py に10件追加）。カバレッジ 98%→98%（374→380 stmts）
+- 修正前の再現: branch="--receive-pack=touch PWNED; git-receive-pack" で publish→PWNED が作られた。paths=["--all"]→無関係な secret.env(ダミー)が stage された。date_str="../../../out/x"→memory ルートの外に書き込まれた
+- 修正後: 同じ入力で ValueError になり PWNED は作られない（実測）
+- pip-audit: No known vulnerabilities found。秘密スキャン: 該当なし（.github/workflows/publish.yml:28 は id-token の権限名で値ではない）
+[直した不具合]
+1. src/agent_handover/backends.py: remote/branch が空か - 始まりなら拒否、add/push に -- を挟む（toml から任意コマンド実行できた）
+2. src/agent_handover/memory.py: date_str を YYYY-MM-DD に限定、tag の \ を - に置換（パス逸脱）
+3. .github/workflows/ci.yml: permissions: contents: read
+[変更点] ブランチ claude/agent-handover-security-0qv33g / PR https://github.com/hikari716/agent-handover/pull/26 (draft)
+[残り] publish.yml の gh-action-pypi-publish@release/v1 を SHA に固定（SHA は未確認なので推測で直さない）／scripts/autopush.sh の git add -A に .env などが混入するリスク（挙動変更になるのでヒロの判断待ち）
+検品: 未（Gemini＋Grok 待ち・本番前は Codex 最終1回）

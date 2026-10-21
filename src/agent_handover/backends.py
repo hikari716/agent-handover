@@ -28,6 +28,12 @@ class GitBackend:
     def __init__(self, repo_root: Path | str, paths: list[str] | None = None,
                  branch: str = "main", remote: str = "origin",
                  push: bool = True, timeout: int = 60):
+        # remote/branch come from user config (handover.toml). A leading "-"
+        # would be parsed by git as an option, e.g. branch="--receive-pack=<cmd>"
+        # runs <cmd> on push, so refuse them outright.
+        for name, value in (("remote", remote), ("branch", branch)):
+            if not value or value.startswith("-"):
+                raise ValueError(f"invalid git {name}: {value!r}")
         self.repo_root = Path(repo_root)
         self.paths = paths or ["."]
         self.branch = branch
@@ -45,7 +51,7 @@ class GitBackend:
         if dry_run:
             return True
         try:
-            r = self._git("add", *self.paths)
+            r = self._git("add", "--", *self.paths)
             if r.returncode != 0:
                 return False
             # Nothing staged under our paths is a success, not a failure. Asking
@@ -59,7 +65,7 @@ class GitBackend:
             if r.returncode != 0:
                 return False
             if self.push:
-                r = self._git("push", self.remote, self.branch)
+                r = self._git("push", "--", self.remote, self.branch)
                 return r.returncode == 0
             return True
         except subprocess.TimeoutExpired:
