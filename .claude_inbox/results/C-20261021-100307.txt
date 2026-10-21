@@ -1,0 +1,27 @@
+RESULT: DONE 精読で不具合3件を再現→修正、テスト100→105全通過・draft PR #25
+Grok: 不要 コード修正のみ・お金/鍵/外部送信なし（main反映時にCodex最終1回）
+判断: 判断: 3件だけ直す / 理由: 再現テストで確かめられ挙動変更が小さいもの。保存形式が変わる2件は残りに回した
+次の一手: Gemini(agy)がPR #25を検品→本番前にCodex最終差分1回→Grok最終OK
+詳細: 6行目以降
+検品: 未（Gemini＋Grok 待ち・本番前は Codex 最終1回）
+
+[実測]
+- 修正前: 100 passed / 再現テスト追加後 5 failed, 100 passed
+- 修正後: 105 passed / カバレッジ 98%→98%（TOTAL 374→379 stmts, miss 8）
+- ruff の指摘2件（backends.py:39 PLW1510, engine.py:16 UP035）は main にもある既存の警告で、今回の変更とは関係ない（CI は pytest だけ）
+
+[直した不具合]
+1. backends.py GitBackend.publish: `git commit -m` が、ユーザーが前もってステージしていた無関係のファイルまで commit・push していた → `-- <paths>` に限定
+2. engine.py HandoverEngine.run: 全部 done なのに complete() 前に落ちた checkpoint だと、publish を含む全ステップをやり直していた → 全部スキップ
+3. cli.py run: 設定ファイル無し・note 無し・PAUSE・ステップ失敗のときトレースバックで落ちていた → stderr に1行出して exit 1
+
+[変更点]
+ブランチ claude/agent-handover-bug-hunt-jrcail
+- src/agent_handover/{backends,engine,cli}.py, tests/test_bug_hunt.py, CHANGELOG.md
+- PR: https://github.com/hikari716/agent-handover/pull/25（draft・未マージ）
+
+[残り（未対応・判断待ち）]
+- memory.py write(layer=1): 同じ日・同じタグの2回目のノートが1回目を上書きして消す（docstring は「append」）。保存形式が変わるので見送り
+- backends.py push: 現在のブランチと設定の branch が違うと、作った commit が push されないまま成功扱いになることがある
+- checkpoint.py load: 壊れた JSON だと check/status がトレースバックで落ちる
+- 秘密情報: 見つからなかった
