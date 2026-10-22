@@ -28,6 +28,8 @@ class GitBackend:
     def __init__(self, repo_root: Path | str, paths: list[str] | None = None,
                  branch: str = "main", remote: str = "origin",
                  push: bool = True, timeout: int = 60):
+        if timeout <= 0:
+            raise ValueError(f"timeout must be positive, got {timeout!r}")
         self.repo_root = Path(repo_root)
         self.paths = paths or ["."]
         self.branch = branch
@@ -62,5 +64,5 @@ class GitBackend:
                 r = self._git("push", self.remote, self.branch)
                 return r.returncode == 0
             return True
-        except subprocess.TimeoutExpired:
+        except (subprocess.TimeoutExpired, OSError):  # OSError: git not installed
             return False

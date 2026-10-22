@@ -15,6 +15,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
 
 
@@ -29,9 +30,13 @@ class MemoryStore:
     # -- write ----------------------------------------------------------
     def write(self, layer: int, content: str, tag: str = "general",
               date_str: str | None = None, dry_run: bool = False) -> Path:
-        if layer not in (1, 2, 3):
-            raise ValueError(f"invalid layer: {layer}")
+        if isinstance(layer, bool) or layer not in (1, 2, 3):
+            raise ValueError(f"invalid layer: {layer!r}")
         date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+        # date_str becomes part of the path; "2026/10/22" or "../x" would
+        # write outside the layer directory.
+        if not DATE_RE.fullmatch(date_str):
+            raise ValueError(f"date_str must be YYYY-MM-DD, got {date_str!r}")
         ym = date_str[:7]
         safe_tag = _safe_tag(tag)
 

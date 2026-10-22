@@ -17,6 +17,18 @@
   block on every re-install when a stray END marker precedes it.
 - Fix: `[backend].paths = "memory"` (a string) is accepted as one path.
 - 46 new unit tests (100 total); coverage 92% -> 98%.
+- Fix: a corrupt or wrongly shaped checkpoint raises `CheckpointError`, and
+  `agent-handover check`/`status` exit 3 with a one-line message. Before, the
+  traceback exited 1, which the session-start guard reads as "resume needed".
+- Fix: `agent-handover run` reports a missing/invalid config, a failed step or
+  a PAUSE on stderr and exits 1 instead of printing a traceback.
+- Fix: config values are type-checked; `push = "false"` (a truthy string) no
+  longer pushes, and wrong types raise `ValueError` naming the key.
+- Fix: `GitBackend.publish()` returns `False` when git is not installed, and
+  rejects a non-positive `timeout`.
+- Fix: `MemoryStore.write()` rejects a `date_str` that is not `YYYY-MM-DD`
+  (`"2026/10/22"` or `"../x"` wrote outside the layer directory) and `layer=True`.
+- 27 new unit tests (127 total).
 
 ## 0.5.1 — 2026-07-13
 

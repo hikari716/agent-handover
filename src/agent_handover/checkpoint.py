@@ -8,6 +8,7 @@ Exit-code contract (used by ``agent-handover check``):
     0 = no resume needed (no run in progress)
     1 = resume needed   (a run was interrupted; pending steps remain)
     2 = last run completed
+    3 = checkpoint unreadable (corrupt JSON or unexpected shape)
 """
 from __future__ import annotations
 
@@ -18,6 +19,11 @@ from pathlib import Path
 RESUME_NONE = 0
 RESUME_NEEDED = 1
 RESUME_COMPLETED = 2
+RESUME_ERROR = 3
+
+
+class CheckpointError(ValueError):
+    """The checkpoint file exists but cannot be trusted."""
 
 
 class Checkpoint:
@@ -26,10 +32,20 @@ class Checkpoint:
 
     # -- persistence ---------------------------------------------------
     def load(self) -> dict:
-        if self.path.exists():
+        if not self.path.exists():
+            return {"status": "none", "steps": {}, "started_at": None, "finished_at": None}
+        try:
             with open(self.path, encoding="utf-8") as f:
-                return json.load(f)
-        return {"status": "none", "steps": {}, "started_at": None, "finished_at": None}
+                data = json.load(f)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise CheckpointError(f"cannot read checkpoint {self.path}: {exc}") from exc
+        # A half-trusted checkpoint is worse than none: refuse a wrong shape
+        # instead of guessing which steps are done.
+        if (not isinstance(data, dict) or not isinstance(data.get("status"), str)
+                or not isinstance(data.get("steps", {}), dict)):
+            raise CheckpointError(f"malformed checkpoint {self.path}")
+        data.setdefault("steps", {})
+        return data
 
     def _save(self, data: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)

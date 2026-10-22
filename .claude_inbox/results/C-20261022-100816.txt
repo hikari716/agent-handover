@@ -1,0 +1,25 @@
+RESULT: DONE エラー処理と型チェック5系統を修正、テスト100→127件全緑、draft PR #27
+Grok: 不要 お金・鍵・外部送信なし。マージ前にCodex/Geminiが差分を確認
+判断: 壊れたcheckpointは終了コード3（新設）/ 理由: 1は「再開が要る」の意味と衝突するため
+次の一手: Geminiが PR #27 を後追い検品 → Grokが最終OKを出してマージ
+詳細: 6行目以降
+[判断と理由]
+- check/statusが壊れたcheckpointを読んだら exit 3: 例外で落ちると exit 1 になり、起動時チェックが「再開が要る」と誤判定するため
+- run の失敗は exit 1 のまま、tracebackをやめてstderrに1行だけ出す: 既存の終了コードを変えないため
+- 設定値は型変換せず不一致なら弾く: push="false"（文字列＝真）でpushされていたため
+[実測]
+- テスト: 前 100 passed → 後 127 passed（追加27件。修正前は26件がfailで再現、1件は修正前からpass）
+- カバレッジ: 98% → 98%（対象の文が374→419に増えた）
+- 実機確認: agent-handover check に壊れたJSONを渡すと exit=3、エラーは1行
+[直した不具合]
+1. 壊れたcheckpointで check が exit 1（＝再開が要る）を返す
+2. run の設定ファイル無し・TOML不正・ステップ失敗・PAUSE で traceback が出る
+3. 設定 push="false" でpushされる。型の違う値も素通りする
+4. GitBackend: gitが入っていないと例外（publishのbool契約違反）。timeoutが0以下でも通る
+5. MemoryStore.write: date_strが"../x"等だと層ディレクトリの外に書く。layer=Trueも通る
+[変更点] ブランチ claude/agent-handover-error-types-cttmdy
+- src/agent_handover/{checkpoint,cli,config,backends,memory}.py, tests/test_error_handling.py（新規）, README.md, CHANGELOG.md
+- PR: https://github.com/hikari716/agent-handover/pull/27 （draft・未マージ）
+[秘密] 読んでいない・見つけていない
+[検品] ローカル（お金系は Gemini＋Grok 待ち）。今回はお金系なし → Geminiが後から検品
+[残り] PR #27 の検品とマージ判断のみ
