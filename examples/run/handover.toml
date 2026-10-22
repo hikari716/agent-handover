@@ -9,7 +9,7 @@
 memory_dir = "memory"
 tag        = "codex"
 checkpoint = ".agent-handover/checkpoint.json"
-# pause_file = "~/.agent_handover/PAUSE"   # optional absolute kill-switch
+pause_file = "~/.agent_handover/PAUSE"     # kill-switch: `touch` it to stop runs
 
 [note]
 # session / current_state are optional here — pass --note on the CLI instead.

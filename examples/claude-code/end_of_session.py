@@ -8,11 +8,13 @@ publishes ``memory/`` so the next session can resume from
     python examples/claude-code/end_of_session.py "refactored the parser; tests green"
 
 Set AH_PUSH=0 to keep everything local (no git push).
+`touch ~/.agent_handover/PAUSE` stops the handover (kill-switch).
 """
 from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 from agent_handover.adapters.codex import build_codex_handover_engine
 
@@ -27,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
         current_state=note,
         tag="claude-code",
         push=push,
+        pause_file=Path.home() / ".agent_handover" / "PAUSE",
     )
     executed = engine.run()
     print("handover steps executed:", ", ".join(executed) or "(none)")

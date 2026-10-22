@@ -70,11 +70,16 @@ store = MemoryStore("memory/")
 cp = Checkpoint(".agent-handover/checkpoint.json")
 git = GitBackend(".", paths=["memory/"])
 
+def publish():
+    # publish() returns False on failure; raise so the step stays pending
+    if not git.publish("handover: session sync"):
+        raise RuntimeError("git publish failed")
+
 engine = HandoverEngine(
     steps=[
         Step("session_note", lambda: store.write(1, notes, tag="refactor")),
         Step("current_state", lambda: store.write(2, snapshot)),
-        Step("publish", lambda: git.publish("handover: session sync")),
+        Step("publish", publish),
     ],
     checkpoint=cp,
     pause_file=Path.home() / ".agent_handover" / "PAUSE",
