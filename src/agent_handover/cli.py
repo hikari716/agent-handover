@@ -1,7 +1,7 @@
 """CLI: agent-handover check | status | run.
 
 - check: exit-code contract for the session-start guard (0 none / 1 resume
-  needed / 2 completed).
+  needed / 2 completed / 3 checkpoint unreadable).
 - status: human-readable checkpoint state.
 - run: execute a declarative handover from a TOML config (see
   ``agent_handover.config``).
@@ -12,7 +12,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from agent_handover.checkpoint import Checkpoint
+from agent_handover.checkpoint import RESUME_ERROR, Checkpoint, CheckpointError
+from agent_handover.engine import PauseError, StepError
 
 DEFAULT_CHECKPOINT = Path(".agent-handover/checkpoint.json")
 
@@ -40,7 +41,20 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    try:
+        return _dispatch(args)
+    except CheckpointError as exc:
+        # Must not exit 1: the session-start guard reads 1 as "resume needed".
+        print(f"agent-handover: error: {exc}", file=sys.stderr)
+        return RESUME_ERROR
+    except (OSError, ValueError, PauseError, StepError) as exc:
+        # Expected failures get one line on stderr, not a traceback. A failed
+        # step stays pending in the checkpoint, so `check` still reports it.
+        print(f"agent-handover: error: {exc}", file=sys.stderr)
+        return 1
 
+
+def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "check":
         return Checkpoint(args.checkpoint).resume_code()
 
