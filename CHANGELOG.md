@@ -17,6 +17,15 @@
   block on every re-install when a stray END marker precedes it.
 - Fix: `[backend].paths = "memory"` (a string) is accepted as one path.
 - 46 new unit tests (100 total); coverage 92% -> 98%.
+- Fix: Layer-1 session notes now append as documented ("append, dated"); a
+  second session with the same tag on the same day used to overwrite the first.
+- Fix: the `end_of_session.py` examples and `examples/run/handover.toml` now
+  honor `~/.agent_handover/PAUSE`, as their READMEs promised (they passed no
+  `pause_file`, so the kill-switch was ignored).
+- Docs: README usage raises when `GitBackend.publish()` returns False, so a
+  failed publish stays pending instead of being checkpointed as done.
+- 11 new tests (111 total), incl. `tests/test_docs_drift.py` that runs the
+  README usage block and the examples.
 
 ## 0.5.1 — 2026-07-13
 
