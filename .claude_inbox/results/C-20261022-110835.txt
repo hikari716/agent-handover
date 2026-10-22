@@ -1,0 +1,24 @@
+RESULT: DONE README/例と実装の食い違い3件をテストで再現→修正、111件全通過・draft PR #28
+Grok: 不要 文書と例とライブラリの修正だけ。お金・鍵・外部送信なし
+判断: 済 Layer1の「追記」は文書の側を正としてコードを直した（2か所に明記・上書きは記録が消える）
+次の一手: Gemini が PR #28 を後追い検品 → OKなら Grok/ヒロ がマージ判断
+詳細: 6行目以降
+[判断と理由]
+- 判断: Layer1 は追記に直す / 理由: README と memory.py の説明が両方「append」。上書きだと同じ日・同じタグの前のセッションのメモが消える
+- 判断: PAUSE は例のスクリプト側で渡す（アダプタ関数の初期値は変えない） / 理由: ライブラリAPIの挙動は変えずに、例のREADMEの約束を守れる
+- 判断: README Usage の publish 失敗は文書だけ直す / 理由: アダプタは _require で失敗扱いにしているのに、README の例だけ失敗を無視していた
+[実測]
+- テスト: 100→111件 全通過（py3.10/3.11/3.12 すべて）。カバレッジ 98%→98%
+- 修正前の main で新テスト7件が失敗することを確認（再現済み）
+- 例を実際に動かした: PAUSE があると codex-cli の例も run+handover.toml も PauseError で止まる（修正前は最後まで走っていた）
+[直した不具合]
+1. MemoryStore.write(1) が追記ではなく上書きだった（コード修正）
+2. examples/*/end_of_session.py ×4 と examples/run/handover.toml が PAUSE を見ていなかった（例を修正）
+3. README Usage の例で publish 失敗が「済」として記録され、check が 2 を返した（文書を修正）
+[変更点] ブランチ claude/agent-handover-readme-drift-d9amti
+- src/agent_handover/memory.py, examples/{claude-code,codex-cli,cline,opencode}/end_of_session.py, examples/run/handover.toml, README.md, CHANGELOG.md, tests/test_memory.py, tests/test_docs_drift.py（新規）
+- PR: https://github.com/hikari716/agent-handover/pull/28 (draft・マージしていない)
+[残り]
+- README の Layer3 欄「monthly compaction」は自動で圧縮する機能がない（write(3) は渡された内容を書くだけ）。表の書き方の問題なので今回は触っていない
+- 秘密情報: 見つからず
+検品: ローカル（お金系は Gemini＋Grok 待ち）※今回はお金系なし。Gemini の後追い検品待ち
