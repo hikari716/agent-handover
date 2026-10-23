@@ -16,4 +16,5 @@ Grok: 不要 挙動修正はPR本文に理由とテスト記載済み、お金/�
 変更点: src/agent_handover/{engine,backends,cli}.py, tests/test_regressions_r2.py, CHANGELOG.md（ブランチ claude/agent-handover-bugs-p049t8）
 秘密: 見つからず（読んでいない）
 検品: ローカル（お金系は Gemini＋Grok 待ち）※お金系なし、Gemini 後追い
-残り: lint(ruff)の既存15件はCI対象外のため未対応。PR URL は PR 作成後の追記コミットで記載
+PR: https://github.com/hikari716/agent-handover/pull/30 (draft)
+残り: lint(ruff)の既存15件はCI対象外のため未対応。結果ファイルはマージ前にPRから外す（#14と同様）
