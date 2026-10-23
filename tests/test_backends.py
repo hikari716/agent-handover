@@ -116,3 +116,43 @@ def test_timeout_returns_false(repo, monkeypatch):
         raise subprocess.TimeoutExpired(cmd="git", timeout=1)
     monkeypatch.setattr(subprocess, "run", boom)
     assert GitBackend(repo, push=False).publish("m") is False
+
+
+def test_push_retried_after_earlier_push_failure(repo, tmp_path):
+    # regression: commit succeeded but push failed -> the publish step stays
+    # pending; on resume nothing is staged, and publish() used to return True
+    # without pushing, so the checkpoint marked an unpushed commit as done.
+    b = GitBackend(repo, paths=["memory"])
+    git(repo, "checkout", "-q", "-b", "main")
+    assert b.publish("m") is False  # no remote yet
+    remote = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    git(repo, "remote", "add", "origin", str(remote))
+    assert b.publish("m") is True
+    assert subprocess.run(["git", "-C", str(remote), "rev-parse", "main"],
+                          capture_output=True).returncode == 0
+
+
+def test_nothing_to_commit_with_push_still_fails_when_push_fails(repo):
+    b = GitBackend(repo, paths=["memory"], push=False)
+    assert b.publish("one") is True
+    # same tree, but push enabled and no remote: must not report success
+    assert GitBackend(repo, paths=["memory"]).publish("two") is False
+
+
+def test_commit_does_not_sweep_unrelated_staged_files(repo):
+    # regression: `git commit` without a pathspec committed everything in the
+    # index, so a user's half-staged work landed in the handover commit.
+    (repo / "wip.txt").write_text("wip", encoding="utf-8")
+    git(repo, "add", "wip.txt")
+    assert GitBackend(repo, paths=["memory"], push=False).publish("handover") is True
+    files = git(repo, "show", "--name-only", "--format=", "HEAD").split()
+    assert files == ["memory/note.md"]
+    assert "A  wip.txt" in git(repo, "status", "--porcelain")
+
+
+def test_commit_failure_returns_false(repo):
+    hook = repo / ".git" / "hooks" / "pre-commit"
+    hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    hook.chmod(0o755)
+    assert GitBackend(repo, paths=["memory"], push=False).publish("m") is False
