@@ -1,0 +1,18 @@
+RESULT: DONE GitBackend不具合2件を再現テスト付きで修正・テスト100→108・cov97→98%
+Grok: 不要 お金/鍵/外部送信なし・draft PRまで
+判断: 前回#14で97%済→カバレッジ水増しより実バグ探索を優先
+次の一手: Geminiが PR #29 を後追い検品→OKならヒロ/Grokがマージ判断
+詳細: 6行目以降
+判断: 実バグ優先 / 理由: 既に97%で残りは到達不能行(cli.py:79等)のみ
+調整: 「カバレッジ拡充」→「不具合探索＋未到達の失敗経路だけ追加」 / 理由: 肥大回避
+実測: pytest 100 passed → 108 passed / branch coverage 97% → 98% (backends・adapters 100%)
+直した不具合:
+ 1) push失敗→再開時に何もstageされず push せず True を返し publish が done 扱い（リモート未反映）→ 常に push
+ 2) git commit がpathspec無しで、ユーザーがstage済の無関係ファイルを巻き込む → commit -- <paths>
+ どちらも修正前に失敗するテストで再現→修正後に全テスト合格を実測
+変更: src/agent_handover/backends.py, tests/test_backends.py, tests/test_engine.py, tests/test_adapters_publish_failure.py(新規), CHANGELOG.md
+ブランチ: claude/agent-handover-test-coverage-hd3o3u
+PR: https://github.com/hikari716/agent-handover/pull/29 (draft)
+秘密: 該当ファイルなし（読んでいない）
+検品: ローカル（お金系は Gemini＋Grok 待ち）※お金系に該当しない・Gemini後追い
+残り: cli.py:75/79・config.py:35-36(py3.10用import) は未カバー（到達不能/環境依存）
