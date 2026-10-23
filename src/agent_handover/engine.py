@@ -59,7 +59,10 @@ class HandoverEngine:
 
         executed: list[str] = []
         for step in self.steps:
-            if resume and pending is not None and pending and step.name not in pending:
+            # An empty pending set means every step finished before the crash
+            # (e.g. between the last mark_done() and complete()): skip them all
+            # rather than re-running side effects such as a second publish.
+            if pending is not None and step.name not in pending:
                 continue  # already done in the interrupted run
             self._check_pause()
             try:

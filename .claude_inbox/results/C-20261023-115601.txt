@@ -1,0 +1,20 @@
+RESULT: DONE 精読で不具合4件を再現テスト→修正、107件全通過・draft PR化
+Grok: 不要 挙動修正はPR本文に理由とテスト記載済み、お金/鍵/外部送信なし
+判断: 4件とも直す（git push再試行の挙動変更を含む）
+次の一手: Gemini が draft PR を後追い検品→ヒロ/Grok がマージ判断
+詳細: 6行目以降
+判断: 未push commit を再開時に push する / 理由: 旧挙動は push 失敗後の再実行が「成功」と記録し、引き継ぎが他機に届かないまま完了扱いになる
+判断: CLI は想定内エラーを exit 1＋1行メッセージに / 理由: 終了コードは従来どおり1、トレースバックだけ消す（チェックポイントが pending を保持）
+調整: なし / 理由: 既存の仕組みとの重複なし、修正は各10行程度
+実測: テスト 100 passed → 107 passed（pytest -q）／カバレッジ 98% → 98%（378 stmts, miss 8）
+実測: 新規7テストは修正前の main で全件 FAIL を確認してから修正
+直した不具合:
+ 1. engine.run: 全ステップ done・complete() 前にクラッシュ → 再開で全ステップ再実行（二重publish）
+ 2. GitBackend.publish: git commit が index 全体を commit → ユーザーが stage 済みの無関係ファイルも引き継ぎcommitに混入・push
+ 3. GitBackend.publish: push 失敗→再開時は「stage無し」で即 True → commit が永遠に未push のまま完了扱い
+ 4. cli run: PAUSE/ノート未指定/設定ファイル無し/ステップ失敗 で生トレースバック
+変更点: src/agent_handover/{engine,backends,cli}.py, tests/test_regressions_r2.py, CHANGELOG.md（ブランチ claude/agent-handover-bugs-p049t8）
+秘密: 見つからず（読んでいない）
+検品: ローカル（お金系は Gemini＋Grok 待ち）※お金系なし、Gemini 後追い
+PR: https://github.com/hikari716/agent-handover/pull/30 (draft)
+残り: lint(ruff)の既存15件はCI対象外のため未対応。結果ファイルはマージ前にPRから外す（#14と同様）
