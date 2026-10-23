@@ -63,3 +63,46 @@ def test_pause_file_blocks_everything(tmp_path):
     with pytest.raises(PauseError):
         engine.run()
     assert log == []
+
+
+def test_resume_after_push_failure_pushes_the_commit(tmp_path):
+    # end-to-end: publish fails on push -> step pending -> resume must push.
+    import shutil
+    import subprocess
+
+    from agent_handover.backends import GitBackend
+
+    if shutil.which("git") is None:
+        pytest.skip("git not installed")
+
+    def git(*args, cwd=tmp_path / "repo"):
+        return subprocess.run(["git", "-C", str(cwd), *args],
+                              capture_output=True, text=True, check=True).stdout
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git("init", "-q")
+    git("checkout", "-q", "-b", "main")
+    git("config", "user.email", "t@example.com")
+    git("config", "user.name", "t")
+    git("config", "commit.gpgsign", "false")
+    (repo / "memory").mkdir()
+    (repo / "memory" / "n.md").write_text("x", encoding="utf-8")
+
+    backend = GitBackend(repo, paths=["memory"])
+
+    def publish():
+        if not backend.publish("handover"):
+            raise RuntimeError("publish failed")
+
+    cp = Checkpoint(tmp_path / "cp.json")
+    engine = HandoverEngine([Step("publish", publish)], cp)
+    with pytest.raises(StepError):
+        engine.run()
+    assert cp.pending_steps() == ["publish"]
+
+    remote = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    git("remote", "add", "origin", str(remote))
+    assert engine.run() == ["publish"]
+    assert git("rev-parse", "main", cwd=remote).strip() == git("rev-parse", "HEAD").strip()

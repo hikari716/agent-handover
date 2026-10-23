@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fix: `GitBackend.publish()` pushes even when nothing new is staged, so a
+  resumed run delivers a commit whose earlier push failed (it previously
+  returned success without pushing, and the checkpoint marked `publish` done).
+- Fix: `GitBackend.publish()` commits only `paths`; files the user had staged
+  elsewhere no longer land in the handover commit and stay staged.
+- 8 new unit tests (108 total); branch coverage 97% -> 98%.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
