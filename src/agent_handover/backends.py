@@ -53,11 +53,14 @@ class GitBackend:
             # added to commit but untracked files present", "no changes added
             # to commit", ...) whenever the repo has unrelated dirty files.
             r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
-            if r.returncode == 0:
-                return True
-            r = self._git("commit", "-m", message)
             if r.returncode != 0:
-                return False
+                # Limit the commit to our paths: anything else the user had
+                # staged must not be swept into (and pushed with) a handover.
+                r = self._git("commit", "-m", message, "--", *self.paths)
+                if r.returncode != 0:
+                    return False
+            # Push even when nothing new was committed: a resumed run after a
+            # failed push finds the commit already made and must still push it.
             if self.push:
                 r = self._git("push", self.remote, self.branch)
                 return r.returncode == 0

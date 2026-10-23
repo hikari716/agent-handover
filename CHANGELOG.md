@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Fix: resuming a checkpoint whose steps were all done (crash between the last
+  step and `complete()`) no longer re-runs every step; it just completes.
+- Fix: `GitBackend.publish()` commits only the configured `paths`; files the
+  user had staged elsewhere are no longer swept into (and pushed with) the
+  handover commit.
+- Fix: `GitBackend.publish()` pushes even when nothing new is staged, so a
+  resumed run after a failed push actually publishes the earlier commit
+  (before, the retry reported success with the commit still local).
+- Fix: `agent-handover run` exits 1 with a one-line message for a missing/bad
+  config, missing note, PAUSE file or failed step instead of a traceback.
+- 7 new regression tests (107 total).
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).
