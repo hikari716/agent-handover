@@ -1,6 +1,6 @@
 RESULT: PARTIAL PR#31 pytest 112 passed実測。Gemini検品はクラウド不可→ローカル待ち
 Grok: 不要 Grok判断(Gemini合格ならマージ可)は済み。残りはGemini検品とマージの実行だけ
-判断: 判断: クラウドではマージしない / 理由: 依頼票の禁止に「PRのマージ」があり、Geminiの合格もまだないため
+判断: クラウドではマージしない / 理由: 依頼票の禁止に「PRのマージ」があり、Geminiの合格もまだないため
 次の一手: ローカルでGemini(agy)がPR#31の差分を後追い検品→合格ならdraftを外してマージ(不合格なら同じブランチ claude/agent-handover-security-hglslb で直す)
 詳細: 6行目以降
 検品: ローカル（お金系は Gemini＋Grok 待ち）。今回は お金・鍵・外部送信なしなので Gemini 合格だけでマージ可（Grok 10-24 返事）
