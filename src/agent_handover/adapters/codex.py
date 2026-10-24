@@ -82,7 +82,7 @@ def build_codex_handover_engine(
     steps = [
         Step("session_note", lambda: store.write(1, session_note, tag=tag)),
         Step("current_state", lambda: store.write(2, current_state)),
-        Step("publish", lambda: _require(backend.publish(f"handover: codex session ({tag})"))),
+        Step("publish", lambda: _require(backend.publish(f"handover: codex session ({tag})"), backend)),
     ]
     return HandoverEngine(
         steps=steps,
@@ -91,7 +91,8 @@ def build_codex_handover_engine(
     )
 
 
-def _require(ok: bool) -> None:
+def _require(ok: bool, backend: object = None) -> None:
     """Turn a backend's boolean result into a checkpointable failure."""
     if not ok:
-        raise RuntimeError("backend.publish failed")
+        reason = getattr(backend, "last_error", None)
+        raise RuntimeError("backend.publish failed" + (f": {reason}" if reason else ""))

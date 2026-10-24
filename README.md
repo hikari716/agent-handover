@@ -86,6 +86,7 @@ In your agent's bootstrap (CLAUDE.md / AGENTS.md):
 
 ```bash
 agent-handover check   # exit 1 → finish the interrupted handover first
+                       # exit 3 → checkpoint file is corrupt; inspect it by hand
 ```
 
 ## Declarative handover (`agent-handover run`)
