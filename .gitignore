@@ -11,3 +11,6 @@ CLAUDE.md.bak_*
 .claudeignore
 .grepai/
 .monitor/
+
+# ops ticket results — never publish
+.claude_inbox/
