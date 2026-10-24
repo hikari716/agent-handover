@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Security: `GitBackend` passes `--` before paths/remote/branch, so a config
+  value starting with `-` (e.g. `branch = "--receive-pack=<cmd>"` in a TOML
+  config) can no longer be parsed as a git option and run a command on push.
+- Security: `MemoryStore.write()` rejects a `date_str` that is not a real
+  `YYYY-MM-DD` date (it is part of the target path, so `"../../x"` wrote
+  outside the store root), and backslashes in tags are sanitized too.
+- CI: workflows run with a read-only `GITHUB_TOKEN` by default.
 - Fix: `HandoverEngine.run()` resuming an interrupted checkpoint no longer skips
   steps the checkpoint did not know about (it previously executed nothing and
   still marked the run completed).

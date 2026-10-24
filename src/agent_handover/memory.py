@@ -19,7 +19,20 @@ HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
 
 
 def _safe_tag(tag: str) -> str:
-    return tag.replace("/", "-").replace(" ", "_")
+    # Backslash is a path separator on Windows, so it must not survive either.
+    return tag.replace("/", "-").replace("\\", "-").replace(" ", "_")
+
+
+def _check_date(date_str: str) -> None:
+    # date_str becomes part of the target path; only a real YYYY-MM-DD date
+    # keeps the write inside the store root (no "../" escapes).
+    try:
+        ok = re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_str) is not None
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        ok = False
+    if not ok:
+        raise ValueError(f"invalid date_str (expected YYYY-MM-DD): {date_str!r}")
 
 
 class MemoryStore:
@@ -32,6 +45,7 @@ class MemoryStore:
         if layer not in (1, 2, 3):
             raise ValueError(f"invalid layer: {layer}")
         date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+        _check_date(date_str)
         ym = date_str[:7]
         safe_tag = _safe_tag(tag)
 
