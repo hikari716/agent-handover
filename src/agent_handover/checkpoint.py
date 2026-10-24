@@ -19,6 +19,9 @@ RESUME_NONE = 0
 RESUME_NEEDED = 1
 RESUME_COMPLETED = 2
 
+class CheckpointError(ValueError):
+    """The checkpoint file exists but is not a checkpoint this code can trust."""
+
 
 class Checkpoint:
     def __init__(self, path: Path | str):
@@ -26,10 +29,24 @@ class Checkpoint:
 
     # -- persistence ---------------------------------------------------
     def load(self) -> dict:
-        if self.path.exists():
+        if not self.path.exists():
+            return {"status": "none", "steps": {}, "started_at": None, "finished_at": None}
+        try:
             with open(self.path, encoding="utf-8") as f:
-                return json.load(f)
-        return {"status": "none", "steps": {}, "started_at": None, "finished_at": None}
+                data = json.load(f)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise CheckpointError(f"unreadable checkpoint {self.path}: {exc}") from exc
+        # Fail here with the path, not later with a bare KeyError/AttributeError.
+        if not isinstance(data, dict):
+            raise CheckpointError(f"invalid checkpoint {self.path}: expected a JSON object")
+        # An unknown status string reads as "nothing to resume" (resume_code 0),
+        # but a missing or non-string one means this is not our file.
+        if not isinstance(data.get("status"), str):
+            raise CheckpointError(f"invalid checkpoint {self.path}: 'status' must be a string")
+        if not isinstance(data.get("steps", {}), dict):
+            raise CheckpointError(f"invalid checkpoint {self.path}: 'steps' must be an object")
+        data.setdefault("steps", {})
+        return data
 
     def _save(self, data: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)

@@ -63,30 +63,32 @@ def build_engine_from_config(
     ``[note]`` section, ``push`` overrides ``[backend].push``, and ``checkpoint``
     overrides ``[handover].checkpoint``.
     """
-    handover = config.get("handover", {})
-    memory_dir = handover.get("memory_dir", "memory")
-    tag = handover.get("tag", "general")
-    cp_path = checkpoint or handover.get("checkpoint", DEFAULT_CHECKPOINT)
-    pause_file = handover.get("pause_file")
+    handover = _section(config, "handover")
+    memory_dir = _opt(handover, "handover", "memory_dir", str, "memory")
+    tag = _opt(handover, "handover", "tag", str, "general")
+    cp_path = checkpoint or _opt(handover, "handover", "checkpoint", str, DEFAULT_CHECKPOINT)
+    pause_file = _opt(handover, "handover", "pause_file", str, None)
 
-    note_cfg = config.get("note", {})
-    session_note = note if note is not None else note_cfg.get("session")
+    note_cfg = _section(config, "note")
+    session_note = note if note is not None else _opt(note_cfg, "note", "session", str, None)
     if session_note is None:
         raise ValueError(
             "no session note: pass note=... (CLI --note) or set [note].session in the config"
         )
-    state = current_state if current_state is not None else note_cfg.get("current_state")
+    state = (current_state if current_state is not None
+             else _opt(note_cfg, "note", "current_state", str, None))
     if state is None:
         state = session_note
 
-    backend = _build_backend(config.get("backend", {}), memory_dir, push)
-    commit_msg = config.get("backend", {}).get("message", f"handover: {tag} session")
+    backend_cfg = _section(config, "backend")
+    backend = _build_backend(backend_cfg, memory_dir, push)
+    commit_msg = _opt(backend_cfg, "backend", "message", str, f"handover: {tag} session")
 
     store = MemoryStore(memory_dir)
     steps = [
         Step("session_note", lambda: store.write(1, session_note, tag=tag)),
         Step("current_state", lambda: store.write(2, state)),
-        Step("publish", lambda: _require(backend.publish(commit_msg))),
+        Step("publish", lambda: _require(backend.publish(commit_msg), backend)),
     ]
     return HandoverEngine(
         steps=steps,
@@ -95,26 +97,55 @@ def build_engine_from_config(
     )
 
 
-def _build_backend(backend_cfg: dict[str, Any], memory_dir: str, push: bool | None):
-    btype = backend_cfg.get("type", "git")
+def _build_backend(backend_cfg: dict[str, Any], memory_dir: str,
+                   push: bool | None) -> GitBackend | NullBackend:
+    btype = _opt(backend_cfg, "backend", "type", str, "git")
     if btype == "null":
         return NullBackend()
     if btype == "git":
-        do_push = backend_cfg.get("push", True) if push is None else push
+        # Type-check push: `push = "false"` is a truthy string and used to push.
+        cfg_push = _opt(backend_cfg, "backend", "push", bool, True)
+        do_push = cfg_push if push is None else push
         paths = backend_cfg.get("paths") or [str(memory_dir)]
         if isinstance(paths, str):  # `paths = "memory"` must not become m, e, m, ...
             paths = [paths]
+        if not isinstance(paths, list) or not all(isinstance(p, str) for p in paths):
+            raise ValueError(f"backend.paths must be a string or a list of strings, got {paths!r}")
         return GitBackend(
-            backend_cfg.get("repo_dir", "."),
+            _opt(backend_cfg, "backend", "repo_dir", str, "."),
             paths=paths,
-            branch=backend_cfg.get("branch", "main"),
-            remote=backend_cfg.get("remote", "origin"),
+            branch=_opt(backend_cfg, "backend", "branch", str, "main"),
+            remote=_opt(backend_cfg, "backend", "remote", str, "origin"),
             push=do_push,
         )
     raise ValueError(f"unknown backend type: {btype!r} (expected 'git' or 'null')")
 
 
-def _require(ok: bool) -> None:
+def _section(config: dict[str, Any], name: str) -> dict[str, Any]:
+    value = config.get(name, {})
+    if not isinstance(value, dict):
+        raise ValueError(f"[{name}] must be a table, got {type(value).__name__}")
+    return value
+
+
+def _opt(section: dict[str, Any], section_name: str, key: str, typ: type, default: Any) -> Any:
+    """Return ``section[key]`` (or ``default`` when absent), checking its type.
+
+    TOML has no null, so an explicit ``None`` can only come from a dict built in
+    Python; it is rejected like any other wrong type.
+    """
+    if key not in section:
+        return default
+    value = section[key]
+    if not isinstance(value, typ):
+        raise ValueError(
+            f"{section_name}.{key} must be a {typ.__name__}, got {type(value).__name__} ({value!r})"
+        )
+    return value
+
+
+def _require(ok: bool, backend: object = None) -> None:
     """Turn a backend's boolean result into a checkpointable failure."""
     if not ok:
-        raise RuntimeError("backend.publish failed")
+        reason = getattr(backend, "last_error", None)
+        raise RuntimeError("backend.publish failed" + (f": {reason}" if reason else ""))

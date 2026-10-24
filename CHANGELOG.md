@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Fix: `GitBackend.publish()` retried after a failed push (the engine keeps
+  `publish` pending) now pushes the commit from the earlier attempt. It used to
+  see "nothing staged", return success and mark the handover completed while
+  the commit was still only local.
+- Fix: a corrupt or malformed checkpoint makes `agent-handover check`/`status`
+  print `error: ...` and exit `3`. It used to crash with exit 1, which the
+  session guard reads as "resume needed" and so looped on the broken file.
+  `Checkpoint.load()` raises `CheckpointError` (a `ValueError`) naming the file.
+- Fix: TOML config values are type-checked. `push = "false"` (a string) was
+  truthy and pushed; it and other wrong types now raise `ValueError` naming the
+  field (e.g. `backend.push must be a bool`).
+- `agent-handover run` reports a missing/invalid config, a failed step or a
+  PAUSE file as `error: ...` on stderr with exit 1 instead of a traceback.
+- `GitBackend.last_error` records why `publish()` failed (git's stderr, a
+  timeout, or git not being installed — that used to raise `FileNotFoundError`),
+  and the `backend.publish failed` step error now includes it.
+  `GitBackend(timeout=...)` must be a positive int.
 - Security: `GitBackend` passes `--` before paths/remote/branch, so a config
   value starting with `-` (e.g. `branch = "--receive-pack=<cmd>"` in a TOML
   config) can no longer be parsed as a git option and run a command on push.
