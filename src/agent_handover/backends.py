@@ -45,7 +45,10 @@ class GitBackend:
         if dry_run:
             return True
         try:
-            r = self._git("add", *self.paths)
+            # "--" everywhere a config value is passed: a path/remote/branch that
+            # starts with "-" must never be read as an option (e.g. a
+            # `--receive-pack=<cmd>` branch would run <cmd> on push).
+            r = self._git("add", "--", *self.paths)
             if r.returncode != 0:
                 return False
             # Nothing staged under our paths is a success, not a failure. Asking
@@ -59,7 +62,7 @@ class GitBackend:
             if r.returncode != 0:
                 return False
             if self.push:
-                r = self._git("push", self.remote, self.branch)
+                r = self._git("push", "--", self.remote, self.branch)
                 return r.returncode == 0
             return True
         except subprocess.TimeoutExpired:
