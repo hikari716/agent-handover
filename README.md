@@ -31,7 +31,7 @@ multiple machines and agents since 2025.
 │    step 4: GitBackend.publish(...)        ── checkpointed   │
 └──────────────────────────────────────────────────────────────┘
 ┌─ next session starts ───────────────────────────────────────┐
-│  $ agent-handover check    # 0=clean  1=RESUME  2=completed │
+│  $ agent-handover check  # 0=clean 1=RESUME 2=done 3=corrupt│
 │  read layer2/current-state.md  →  agent has context again   │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -41,9 +41,9 @@ by humans and any agent that can read a file):
 
 | Layer | File pattern | Semantics |
 |---|---|---|
-| 1 | `layer1/YYYY-MM/<tag>-<date>.md` | session notes (append, dated) |
+| 1 | `layer1/YYYY-MM/<tag>-<date>.md` | session notes (dated; same-day notes are appended) |
 | 2 | `layer2/current-state.md` | "where are we now" (always overwritten) |
-| 3 | `layer3/YYYY-MM-<tag>-archive.md` | monthly compaction of old notes |
+| 3 | `layer3/YYYY-MM-<tag>-archive.md` | monthly archive you write (e.g. a compaction of old notes; not automatic) |
 
 **Three rules learned in production:**
 
@@ -70,11 +70,17 @@ store = MemoryStore("memory/")
 cp = Checkpoint(".agent-handover/checkpoint.json")
 git = GitBackend(".", paths=["memory/"])
 
+def publish():
+    # publish() returns False on failure; raise so the step stays pending
+    # and the next run retries it instead of marking the handover done.
+    if not git.publish("handover: session sync"):
+        raise RuntimeError(git.last_error)
+
 engine = HandoverEngine(
     steps=[
         Step("session_note", lambda: store.write(1, notes, tag="refactor")),
         Step("current_state", lambda: store.write(2, snapshot)),
-        Step("publish", lambda: git.publish("handover: session sync")),
+        Step("publish", publish),
     ],
     checkpoint=cp,
     pause_file=Path.home() / ".agent_handover" / "PAUSE",

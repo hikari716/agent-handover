@@ -1,0 +1,16 @@
+RESULT: DONE README実装ずれ3件修正(layer1上書き→追記・Usage例のpush失敗見逃し・文言) PR#37
+Grok: 不要 お金・鍵・外部送信なし、draft PRまで
+判断: layer1はREADME/docstring側が正→コード修正、Usage例はコード側が正→文書修正
+次の一手: Geminiが後追い検品→ヒロがPR#37をレビュー・マージ判断
+詳細: 6行目以降
+判断: layer1を追記に / 理由: 同日同タグの2回目のセッションで1回目のメモが消える（データ消失）。README・docstringともに「append」と書いてある
+判断: 結果ファイルは .gitignore 対象なので -f で別コミット（前例 a0c4471→4c21887 と同じ。マージ前に外してよい）
+実測: pytest 154 passed→157 passed、カバレッジ 99%（memory.py 100%）
+実測: 修正前は layer1 を2回書くと2回目だけ残った（再現テスト test_layer1_appends_same_day_same_tag が修正前に失敗）
+実測: 修正前のREADME Usage例はremoteなしでpushが失敗しても check=2（完了扱い）。修正後は check=1（再開）。tests/test_readme.py がREADME例を実行し、旧READMEでは失敗・新READMEでは成功
+実測: examples/run（--no-push）・4つのend_of_session.py（AH_PUSH=0）・AGENTS.md/.clinerulesの例が生成ブロックと一致・CLIフラグ → ずれなし
+変更: src/agent_handover/memory.py, tests/test_memory.py, tests/test_readme.py(新規), README.md, CHANGELOG.md / ブランチ claude/agent-handover-readme-drift-mj4c5h
+PR: https://github.com/hikari716/agent-handover/pull/37 (draft)
+残り: adapterブロックに check exit 3 の扱いがない（READMEにはある）。範囲外なので未対応
+秘密: 見つからず
+検品: ローカル（お金系は Gemini＋Grok 待ち）

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Fix: `MemoryStore.write(1, ...)` appends to an existing same-day,
+  same-tag Layer-1 note, as the README and module docstring describe
+  ("append, dated"). It used to overwrite it, so a second session on the same
+  day lost the first session's note.
+- Docs: the README `Usage` example raises when `GitBackend.publish()` returns
+  `False`. As written, a failed push was marked done and `check` reported the
+  handover completed (exit 2). A test now runs that snippet.
+- Docs: README says Layer 3 is an archive you write (no automatic
+  compaction), and the diagram lists `check` exit 3.
+
 - Fix: `GitBackend.publish()` retried after a failed push (the engine keeps
   `publish` pending) now pushes the commit from the earlier attempt. It used to
   see "nothing staged", return success and mark the handover completed while
