@@ -1,0 +1,23 @@
+RESULT: DONE テスト154→199件・カバレッジ98→99%・不具合3件を再現テスト付きで修正、draft PR #38
+Grok: 不要 コードとテストだけの変更でお金・鍵・外部送信なし。draft PRで止めている
+判断: commitは`-- paths`ではなくステージ済みファイル一覧で行う（空ディレクトリでの退行を避けるため）
+次の一手: Geminiがローカルで後追い検品 → ヒロがPR #38をレビューしてマージ
+詳細: 6行目以降
+判断と理由:
+- 判断: 不具合1の修正は `commit -- :(top,literal)<staged files>` / 理由: 最初の `commit -- *paths` 案だと、paths に空ディレクトリがあると失敗する（実測: pathspec did not match, exit 1）
+- 調整: なし（既存のテストと重ならないよう、新ファイル2つに分けて追加）
+実測:
+- テスト: 154 passed → 199 passed（pytest -q, Python 3.13）
+- ブランチカバレッジ: 98%（未カバー5行・4分岐）→ 99%（未カバー4行・2分岐。残りは cli.py の到達しない return と __main__、config.py の py3.10 用 tomli fallback）
+- 再現: 修正前に新しいテストのうち5件が FAIL（commit範囲2件・checkpoint 2件・bool layer 1件）→ 修正後は全件 PASS
+直した不具合:
+1. GitBackend.publish が、paths の外でユーザーがステージしていたファイルまで handover commit に入れていた（backends.py）
+2. Checkpoint._save の with_suffix(".tmp") で、state.tmp という名前のチェックポイントが自分自身を一時ファイルにしていた（書き込み途中で落ちると壊れる）。また兄弟ファイル cp.tmp を上書きしていた（checkpoint.py）
+3. MemoryStore.write(True, …) が layer 1 として通っていた（memory.py）
+変更点: ブランチ claude/agent-handover-test-coverage-lpmnf6
+- src/agent_handover/backends.py, checkpoint.py, memory.py, CHANGELOG.md
+- tests/test_regressions.py, tests/test_coverage_gaps.py（新規）
+PR: https://github.com/hikari716/agent-handover/pull/38 (draft)
+秘密情報: 見つからず・読んでいない
+検品: ローカル（お金系は Gemini＋Grok 待ち）。お金系は該当しないので Gemini の後追い待ち
+残り: なし（CIの結果待ち）
