@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fix: the `GitBackend` handover commit contains only files under its `paths`.
+  It used to also commit anything the user had staged elsewhere in the repo.
+- Fix: the checkpoint temp file is `<name>.tmp` (e.g. `checkpoint.json.tmp`).
+  `with_suffix(".tmp")` made a checkpoint named `state.tmp` its own temp file
+  (a crash mid-write truncated it) and clobbered a sibling `checkpoint.tmp`.
+- Fix: `MemoryStore.write()` rejects `layer=True` (bool passed as layer 1).
+
 - Fix: `GitBackend.publish()` retried after a failed push (the engine keeps
   `publish` pending) now pushes the commit from the earlier attempt. It used to
   see "nothing staged", return success and mark the handover completed while

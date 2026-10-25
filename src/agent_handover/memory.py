@@ -42,7 +42,8 @@ class MemoryStore:
     # -- write ----------------------------------------------------------
     def write(self, layer: int, content: str, tag: str = "general",
               date_str: str | None = None, dry_run: bool = False) -> Path:
-        if layer not in (1, 2, 3):
+        # bool is an int subclass: True would pass as layer 1.
+        if isinstance(layer, bool) or layer not in (1, 2, 3):
             raise ValueError(f"invalid layer: {layer}")
         date_str = date_str or datetime.now().strftime("%Y-%m-%d")
         _check_date(date_str)

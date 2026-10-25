@@ -50,7 +50,9 @@ class Checkpoint:
 
     def _save(self, data: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".tmp")
+        # Append rather than with_suffix(): "state.tmp" would otherwise be its
+        # own temp file, and "cp.json" would clobber a sibling "cp.tmp".
+        tmp = self.path.with_name(self.path.name + ".tmp")
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         tmp.replace(self.path)  # atomic on POSIX
