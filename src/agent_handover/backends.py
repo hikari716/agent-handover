@@ -62,9 +62,18 @@ class GitBackend:
             # directly avoids parsing commit messages, which vary ("nothing
             # added to commit but untracked files present", "no changes added
             # to commit", ...) whenever the repo has unrelated dirty files.
-            r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
+            r = self._git("diff", "--cached", "--name-only", "--no-renames", "-z",
+                          "--", *self.paths)
             if r.returncode != 0:
-                r = self._git("commit", "-m", message)
+                return self._fail("git diff", r)
+            staged = [p for p in r.stdout.split("\0") if p]
+            if staged:
+                # Commit exactly those files: a bare commit would also take
+                # whatever the user had staged outside our paths, and
+                # `-- *self.paths` fails on a path with no tracked files (an
+                # empty directory). Names are repo-top-relative and literal.
+                r = self._git("commit", "-m", message, "--",
+                              *(f":(top,literal){p}" for p in staged))
                 if r.returncode != 0:
                     return self._fail("git commit", r)
             # Push even when nothing new was committed: after a failed push the
