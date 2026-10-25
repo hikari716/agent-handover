@@ -54,3 +54,23 @@ def test_layer1_note_count(tmp_path):
     store.write(1, "b", tag="t2", date_str="2026-06-02")
     assert store.layer1_note_count() == 2
     assert store.layer1_note_count("2026-06") == 2
+
+
+def test_layer1_appends_same_day_same_tag(tmp_path):
+    # README/docstring: layer 1 is "append, dated" — a second session on the
+    # same day with the same tag must not overwrite the first session's note.
+    store = MemoryStore(tmp_path)
+    store.write(1, "first session", tag="codex", date_str="2026-06-07")
+    p = store.write(1, "second session", tag="codex", date_str="2026-06-07")
+    text = p.read_text()
+    assert "first session" in text and "second session" in text
+    assert text.index("first session") < text.index("second session")
+    assert text.count("<!-- agent-handover | layer1 | 2026-06-07 -->") == 2
+    assert store.layer1_note_count() == 1
+
+
+def test_layer1_append_dry_run_writes_nothing(tmp_path):
+    store = MemoryStore(tmp_path)
+    p = store.write(1, "first", tag="t", date_str="2026-06-07")
+    store.write(1, "second", tag="t", date_str="2026-06-07", dry_run=True)
+    assert "second" not in p.read_text()
