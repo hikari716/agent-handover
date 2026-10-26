@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Fix: `GitBackend.publish()` commits only its own `paths`. Files the user had
+  staged elsewhere in the repo used to be swept into the handover commit and
+  pushed.
+- Fix: with `push` on, `GitBackend.publish()` fails (and commits nothing) when
+  the checked-out branch is not `branch`. It used to commit on the current
+  branch, push the stale configured branch and report success.
+- Fix: a second same-day Layer-1 note with the same tag is appended to the
+  day's file, as documented. It used to overwrite the first note.
+- Fix: a run that crashed after its last step but before being marked
+  completed no longer re-runs every step on resume.
 - Fix: `GitBackend.publish()` retried after a failed push (the engine keeps
   `publish` pending) now pushes the commit from the earlier attempt. It used to
   see "nothing staged", return success and mark the handover completed while

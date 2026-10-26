@@ -97,6 +97,7 @@ def test_not_a_repo_returns_false(tmp_path):
 
 def test_push_failure_returns_false(repo):
     # no remote named "origin" -> push fails after a successful commit
+    git(repo, "checkout", "-q", "-b", "main")
     assert GitBackend(repo, paths=["memory"], push=True).publish("m") is False
     assert commit_count(repo) == 1
 

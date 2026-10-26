@@ -58,13 +58,25 @@ class GitBackend:
             r = self._git("add", "--", *self.paths)
             if r.returncode != 0:
                 return self._fail("git add", r)
+            if self.push:
+                # Only the checked-out branch gets the commit. Pushing a
+                # different local branch would report success while the new
+                # notes stay unpublished, so refuse before committing anything.
+                r = self._git("symbolic-ref", "--short", "-q", "HEAD")
+                current = r.stdout.strip() if r.returncode == 0 else "(detached HEAD)"
+                if current != self.branch:
+                    self.last_error = (f"checked-out branch is {current}, not {self.branch}; "
+                                       "switch branches or set backend.branch")
+                    return False
             # Nothing staged under our paths is not a failure. Asking git
             # directly avoids parsing commit messages, which vary ("nothing
             # added to commit but untracked files present", "no changes added
             # to commit", ...) whenever the repo has unrelated dirty files.
             r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
             if r.returncode != 0:
-                r = self._git("commit", "-m", message)
+                # Pathspec-limited: other files the user has staged must not
+                # ride along in the handover commit.
+                r = self._git("commit", "-m", message, "--", *self.paths)
                 if r.returncode != 0:
                     return self._fail("git commit", r)
             # Push even when nothing new was committed: after a failed push the
