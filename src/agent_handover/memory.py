@@ -19,8 +19,10 @@ HEADER = "<!-- agent-handover | layer{layer} | {date} -->\n"
 
 
 def _safe_tag(tag: str) -> str:
-    # Backslash is a path separator on Windows, so it must not survive either.
-    return tag.replace("/", "-").replace("\\", "-").replace(" ", "_")
+    # Backslash is a path separator on Windows, so it must not survive either;
+    # ":" would switch drive ("C:x") or open an NTFS alternate data stream.
+    return (tag.replace("/", "-").replace("\\", "-").replace(":", "-")
+            .replace(" ", "_"))
 
 
 def _check_date(date_str: str) -> None:
@@ -55,6 +57,12 @@ class MemoryStore:
             target = self.root / "layer2" / "current-state.md"
         else:
             target = self.root / "layer3" / f"{ym}-{safe_tag}-archive.md"
+
+        # A layer dir or file inside the store can be a symlink shipped by a
+        # cloned repo (e.g. to ~/.bashrc); never write through one that leaves
+        # the root. The root itself may be a symlink.
+        if not target.resolve().is_relative_to(self.root.resolve()):
+            raise ValueError(f"refusing to write outside the store root: {target}")
 
         if not dry_run:
             target.parent.mkdir(parents=True, exist_ok=True)
