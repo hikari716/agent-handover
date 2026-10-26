@@ -1,0 +1,24 @@
+RESULT: DONE セキュリティ実害4件を修正（テスト154→163全合格）・draft PR #40
+Grok: 不要 コードのみ・お金/鍵/外部送信なし
+判断: 結果ファイルは .gitignore 済みの .claude_inbox/ を git add -f で commit（票の完了合図を優先）
+次の一手: Gemini が PR #40 を後追い検品 → ヒロ/Grok がマージ判断
+詳細: 6行目以降
+判断と理由:
+- 判断: 結果ファイルは -f で commit / 理由: 票の完了合図が必須。#36 の方針（main に残さない）とぶつかるので、マージ前に消すかどうかは Codex/ヒロが決める
+- 調整: 「依存の既知脆弱性」→ pip-audit だけ（依存は tomli 1個） / 理由: 大型更新禁止・脆弱性0件
+実測:
+- テスト: 154 passed → 163 passed（+9）、カバレッジ 99%→99%（443文中5行未通過）
+- 新テスト8件は修正前に FAIL を確認（再現）→ 修正後に PASS
+- pip-audit: 既知脆弱性なし / 秘密スキャン: 追跡ファイルに秘密なし（ヒット0）
+直した不具合:
+1. GitBackend.publish が手でステージ済みの別ファイル（例 secret.env）まで commit・push してた → `git commit -- <paths>`
+2. MemoryStore.write が symlink（memory/layer2/current-state.md -> ~/.bashrc 等）越しに root の外へ書けた → ValueError
+3. tag の ":"（Windows のドライブ切替・NTFS ADS）→ "-" に置換
+4. checkpoint.tmp の symlink を辿って書いてた → unlink してから排他作成
+変更点（ブランチ claude/agent-handover-security-ffhktv）:
+- src/agent_handover/backends.py, memory.py, checkpoint.py, tests/test_security.py, CHANGELOG.md
+- PR: https://github.com/hikari716/agent-handover/pull/40 (draft)
+残り:
+- .github/workflows の actions がタグ固定で SHA 固定じゃない（publish.yml に id-token: write あり）→ 要判断
+- scripts/autopush.sh の git add -A は未追跡の秘密も push しうる（作りどおりなので触ってない）
+検品: ローカル（お金系は Gemini＋Grok 待ち）※お金系の変更なし。Gemini が後追い

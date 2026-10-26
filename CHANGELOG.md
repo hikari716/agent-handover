@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Security: `GitBackend.publish()` commits only its configured `paths`
+  (`git commit -- <paths>`). Anything else the user had staged (e.g. a secrets
+  file) used to ride along in the handover commit and get pushed; it now stays
+  staged and out of the push.
+- Security: `MemoryStore.write()` refuses (`ValueError`) to write through a
+  symlinked layer dir/file that resolves outside the store root, so a cloned
+  repo shipping `memory/layer2/current-state.md -> ~/.bashrc` cannot make a
+  handover overwrite it. A symlinked root itself still works.
+- Security: `:` in a tag becomes `-` (on Windows `C:x` switched drive and
+  escaped the root; `a:b` wrote an NTFS alternate data stream).
+- Security: the checkpoint's temp file is unlinked and created exclusively, so
+  a planted `checkpoint.tmp` symlink is not written through.
 - Fix: `GitBackend.publish()` retried after a failed push (the engine keeps
   `publish` pending) now pushes the commit from the earlier attempt. It used to
   see "nothing staged", return success and mark the handover completed while

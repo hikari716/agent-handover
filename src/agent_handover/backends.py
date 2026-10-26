@@ -64,7 +64,9 @@ class GitBackend:
             # to commit", ...) whenever the repo has unrelated dirty files.
             r = self._git("diff", "--cached", "--quiet", "--", *self.paths)
             if r.returncode != 0:
-                r = self._git("commit", "-m", message)
+                # Pathspec-limited commit: anything else the user staged
+                # (e.g. a secrets file) stays staged and out of the push.
+                r = self._git("commit", "-m", message, "--", *self.paths)
                 if r.returncode != 0:
                     return self._fail("git commit", r)
             # Push even when nothing new was committed: after a failed push the

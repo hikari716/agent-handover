@@ -51,7 +51,10 @@ class Checkpoint:
     def _save(self, data: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
-        with open(tmp, "w", encoding="utf-8") as f:
+        # Drop a stale (or planted symlink) tmp first, and create it exclusively,
+        # so the write never lands on whatever a symlink points at.
+        tmp.unlink(missing_ok=True)
+        with open(tmp, "x", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         tmp.replace(self.path)  # atomic on POSIX
 
