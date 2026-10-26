@@ -1,0 +1,19 @@
+RESULT: DONE 精読で実不具合4件を再現→修正、テスト154→160全通過、draft PR #39
+Grok: 不要 コードのみの修正でお金・鍵・外部送信なし（draft PR止まり・マージしない）
+判断: ブランチ不一致はpushせず失敗で返す／Layer1は追記に変更（README記載に合わせる）
+次の一手: Gemini が PR #39 を後追い検品、ヒロ/Grok がマージ可否を判断
+詳細: 6行目以降
+判断: ブランチ不一致時は push しないで False を返す / 理由: HEAD:branch で push すると作業ブランチが main に入る危険があるため
+判断: Layer1 の同日・同タグのノートは上書きせず追記にする / 理由: README に「append, dated」とあり、上書きだとノートが消えるため
+調整: 依頼にあった結果ファイルの書式（1行目 RESULT＋実測/不具合/PR/残り）を、手順3の固定5行の書式に合わせた / 理由: 必須項目は両方とも中に入れてある
+実測: pytest 154 passed → 160 passed（追加6件のうち4件は修正前に FAILED で再現を確認）。カバレッジ 99%（440→450 stmts, miss 5 は不変）
+直した不具合:
+ 1. backends.py GitBackend.publish: git commit がインデックス全体をコミットしていた。ユーザーが stage していた別ファイルも一緒にコミット・push されていた → pathspec を付けてコミット範囲を限定
+ 2. backends.py: 今いるブランチが設定の branch と違うと、今のブランチにコミットしたうえで古い main を push し、True を返していた（ノートは公開されない）→ 不一致なら失敗にして、何もコミットしない
+ 3. memory.py write(layer=1): 同じ日・同じタグの2本目のノートが1本目を上書きしていた → 追記に変更
+ 4. engine.py run: 全ステップ完了後、complete() の前にクラッシュすると、resume で全ステップを再実行していた → done のステップは常にスキップ
+変更点: src/agent_handover/{backends,memory,engine}.py, tests/test_readthrough_bugs.py(新規), tests/test_backends.py(1行), CHANGELOG.md / ブランチ claude/agent-handover-bugs-v7vrm3
+PR: https://github.com/hikari716/agent-handover/pull/39 (draft)
+秘密: 見つからず（読んだのは src/ と tests/ だけ）
+検品: ローカル（お金系は Gemini＋Grok 待ち）。自己検品はしていない。PR #39 は Gemini の後追い検品待ち
+残り: 見つけたが直していないもの（設計の範囲）— resume 時に、新しい --note を渡しても session_note は done 扱いなのでスキップされ、新しい内容が反映されない。直すかどうかはヒロ/Grok の判断
